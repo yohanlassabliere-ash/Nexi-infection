@@ -42,9 +42,13 @@
   .console { font: 13px var(--code); padding: 8px 12px; min-height: 38px; background: var(--panneau); border-top: 2px solid var(--bord); }
   .console.erreur { color: var(--corail); }
   .console.ok { color: var(--menthe); }
-  .astuces { padding: 8px 12px 12px; background: var(--panneau); border-top: 2px solid var(--bord); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .astuces span { font: 12px var(--titre); color: var(--or); margin-right: 4px; }
-  .astuces button { font: 11px var(--code); padding: 4px 8px; border-width: 1px; }
+  .reglages { max-height: 38%; overflow: auto; background: var(--panneau); border-top: 2px solid var(--bord); padding: 6px 12px 10px; }
+  .reglages h2 { font: 12px var(--titre); color: var(--or); margin: 6px 0 2px; letter-spacing: 1px; }
+  .reglage { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 2px 0; border-bottom: 1px solid #221840; }
+  .reglage .nom { color: var(--texte); }
+  .reglage .valeur { font: 12px var(--code); color: var(--menthe); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .reglage a { font: 12px var(--code); color: var(--violet); text-decoration: underline; cursor: pointer; white-space: nowrap; }
+  .reglage a:hover { color: var(--or); }
   dialog { background: var(--panneau); color: var(--texte); border: 2px solid var(--or); padding: 20px; max-width: min(92vw, 520px); }
   dialog::backdrop { background: rgba(5, 1, 12, 0.85); }
   dialog h2 { font: 18px var(--titre); color: var(--or); margin: 0 0 8px; }
@@ -74,7 +78,7 @@
   <div class="droite">
     <div class="ecran"><iframe id="jeu" title="Aperçu du jeu" allow="fullscreen; autoplay"></iframe></div>
     <div class="console" id="console">Modifie une valeur, puis clique sur ▶ LANCER. Clique dans le jeu pour jouer au clavier.</div>
-    <div class="astuces" id="astuces"><span>ESSAIE :</span></div>
+    <div class="reglages" id="reglages" aria-label="Réglages du jeu"></div>
   </div>
 </main>
 <dialog id="fenetre">
@@ -95,16 +99,82 @@ const zone = $("code"), numeros = $("numeros");
 let original = "", idOriginal = "";
 const CLE_BROUILLON = "nexi_atelier_brouillon";
 
-// Des idées de modifications pour démarrer (on cherche la ligne dans le code)
-const ASTUCES = [
-  { txt: "Nexi invincible", cherche: "PV_MAX:" },
-  { txt: "Sauter plus haut", cherche: "FORCE_SAUT:" },
-  { txt: "Renommer les boss", cherche: "const NOMS_BOSS" },
-  { txt: "Monstres coriaces", cherche: "MULT_PV:" },
-  { txt: "Élément des attaques", cherche: "const ELEMENT_ACTIF" },
-  { txt: "Composer la musique", cherche: "const MUSIQUE" },
-  { txt: "Texte de la mort", cherche: "TEXTES DE MORT" },
+// Les réglages qu'un visiteur peut changer : un lien saute à la ligne et sélectionne la valeur.
+// id = ce qu'on cherche dans le code ; apres = chercher seulement après cette ligne.
+// Ces liens marchent aussi depuis l'extérieur : atelier/#PV_MAX ouvre l'atelier sur la bonne ligne.
+const REGLAGES = [
+  { groupe: "NEXI" },
+  { nom: "Points de vie", id: "PV_MAX:" },
+  { nom: "Vitesse de déplacement", id: "VITESSE:", apres: "const JOUEUR" },
+  { nom: "Hauteur du saut", id: "FORCE_SAUT:" },
+  { nom: "Dégâts d'une attaque", id: "DEGATS_LEGER:" },
+  { nom: "Dégâts du coup final", id: "DEGATS_COMBO:" },
+  { nom: "Temps entre deux attaques (s)", id: "COOLDOWN_LEGER:" },
+  { nom: "Régénération des PV", id: "REGEN_PV:" },
+  { nom: "Tue tout en un coup", id: "ONE_SHOT:" },
+  { nom: "Couleur du corps de Nexi", id: "P:", apres: "const PAL_NEXI" },
+  { groupe: "COMPÉTENCE (ONDE N'SHIELD)" },
+  { nom: "Dégâts de l'onde", id: "DEGATS:", apres: "const COMPETENCE" },
+  { nom: "Taille de l'onde", id: "RAYON:", apres: "const COMPETENCE" },
+  { nom: "Recharge (s)", id: "COOLDOWN:", apres: "const COMPETENCE" },
+  { nom: "Élément des attaques", id: "const ELEMENT " },
+  { groupe: "MONSTRES" },
+  { nom: "Résistance (PV × …)", id: "MULT_PV:" },
+  { nom: "Force (dégâts × …)", id: "MULT_DEGATS:" },
+  { nom: "Monstres dans la 1re salle", id: "ENNEMIS_DEPART:" },
+  { nom: "Chance d'être élémentaire", id: "CHANCE_ELEMENTAIRE:" },
+  { groupe: "BOSS" },
+  { nom: "Nom du Cheval de Troie", id: "troie:", apres: "const NOMS_BOSS" },
+  { nom: "Nom du Tyran", id: "archonte:", apres: "const NOMS_BOSS" },
+  { nom: "Le Tyran revient tous les … cycles", id: "ARCHONTE_TOUS_LES:" },
+  { nom: "Croissance des PV des boss", id: "GAIN_PAR_CYCLE:" },
+  { groupe: "MONDE" },
+  { nom: "Texte quand Nexi meurt", id: "const MESSAGE_KO" },
+  { nom: "Chance de bonus aux portes", id: "CHANCE_BONUS:" },
+  { nom: "Chance de coffre", id: "CHANCE_COFFRE:" },
+  { nom: "Chance de pièges", id: "CHANCE_PAR_SALLE:" },
+  { nom: "Gravité", id: "GRAVITE:" },
+  { nom: "Tempo de la musique", id: "tempo:", apres: "exploration:" },
+  { nom: "Mode démo (choisir sa salle)", id: "const MODE_DEMO" },
 ];
+// Trouve la ligne d'un réglage, et la position de sa valeur dans cette ligne
+function trouverReglage(r, lignes) {
+  let debut = 0;
+  if (r.apres) { debut = lignes.findIndex((l) => l.includes(r.apres)); if (debut < 0) return null; }
+  for (let i = debut; i < lignes.length; i++) {
+    const l = lignes[i], k = l.indexOf(r.id), com = l.indexOf("//");
+    if (k < 0 || (com >= 0 && com < k)) continue;          // on ignore les commentaires
+    const reste = l.slice(k + r.id.length), m = reste.match(/^\s*=?\s*("[^"]*"|[^,;\/}\s]+)/);
+    if (!m) return { ligne: i + 1, debut: 0, fin: l.length, valeur: "" };
+    const d = k + r.id.length + reste.indexOf(m[1]);
+    return { ligne: i + 1, debut: d, fin: d + m[1].length, valeur: m[1] };
+  }
+  return null;
+}
+function allerAReglage(r) {
+  const lignes = zone.value.split("\n"), t = trouverReglage(r, lignes);
+  if (!t) return;
+  let pos = 0; for (let i = 0; i < t.ligne - 1; i++) pos += lignes[i].length + 1;
+  zone.focus();
+  zone.setSelectionRange(pos + t.debut, pos + t.fin);   // la valeur est sélectionnée : il suffit de taper
+  zone.scrollTop = Math.max(0, (t.ligne - 6) * 18);
+}
+function afficherReglages() {
+  const boite = $("reglages"), lignes = zone.value.split("\n");
+  boite.textContent = "";
+  for (const r of REGLAGES) {
+    if (r.groupe) { const h = document.createElement("h2"); h.textContent = r.groupe; boite.appendChild(h); continue; }
+    const t = trouverReglage(r, lignes);
+    const ligne = document.createElement("div"); ligne.className = "reglage";
+    const nom = document.createElement("span"); nom.className = "nom"; nom.textContent = r.nom;
+    const val = document.createElement("span"); val.className = "valeur"; val.textContent = t ? t.valeur : "?";
+    const a = document.createElement("a"); a.href = "#" + encodeURIComponent(r.id.replace(/[:\s]+$/, "")); a.textContent = t ? "ligne " + t.ligne : "introuvable";
+    a.onclick = (e) => { e.preventDefault(); allerAReglage(r); };
+    ligne.append(nom, val, a); boite.appendChild(ligne);
+  }
+}
+let minuteurReglages = 0;
+zone.addEventListener("input", () => { clearTimeout(minuteurReglages); minuteurReglages = setTimeout(afficherReglages, 400); });
 
 function mettreAJourNumeros() {
   const n = zone.value.split("\n").length;
@@ -202,13 +272,12 @@ async function demarrer() {
   try { const b = JSON.parse(localStorage.getItem(CLE_BROUILLON) || "null"); if (b && b.id === idOriginal) code = b.code; } catch (e) { }
   zone.value = code;
   mettreAJourNumeros(); remplirSections();
-  for (const a of ASTUCES) {
-    const b = document.createElement("button"); b.textContent = a.txt;
-    b.onclick = () => { const n = chercherLigne(a.cherche); if (n) allerALigne(n); };
-    $("astuces").appendChild(b);
-  }
+  afficherReglages();
   lancer();
-  const n = chercherLigne("★ DÉBUTANT — CONFIGURATION"); if (n) allerALigne(n);
+  // un lien du type atelier/#PV_MAX ouvre directement le bon réglage
+  const voulu = decodeURIComponent(location.hash.slice(1)), r = voulu && REGLAGES.find((x) => x.id && x.id.replace(/[:\s]+$/, "") === voulu);
+  if (r) allerAReglage(r);
+  else { const n = chercherLigne("★ DÉBUTANT — CONFIGURATION"); if (n) allerALigne(n); }
 }
 demarrer();
 </script>
