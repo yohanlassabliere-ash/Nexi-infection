@@ -3,9 +3,14 @@
 #   branche dev  -> https://<pseudo>.github.io/nexi-infection/dev/  (version de test)
 name: Publier le jeu
 
+# GitHub n'autorise la publication que depuis main : un envoi sur dev
+# déclenche d'abord « Signal dev » (dev.yml), qui relance cette publication depuis main.
 on:
   push:
-    branches: [main, dev]
+    branches: [main]
+  workflow_run:
+    workflows: ["Signal dev"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:

@@ -1,0 +1,12 @@
+# Un envoi sur la branche dev demande la republication du site (voir pages.yml).
+name: Signal dev
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Nouvelle version de test sur dev, publication du site relancée."
