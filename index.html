@@ -4468,7 +4468,8 @@ function demarrer() {
   window.addEventListener("resize", redimensionner);
   const pos = ev => ({ x: ev.clientX, y: ev.clientY });
   lireSauvegardeLocale();
-  cv.addEventListener("pointerdown", ev => { ev.preventDefault(); sonDemarrer(); pointeurs.set(ev.pointerId, pos(ev)); dernierTap = pos(ev); tapEnAttente = true; });
+  // window.focus() : dans l'atelier, le jeu est dans un cadre ; un clic doit lui donner le clavier
+  cv.addEventListener("pointerdown", ev => { ev.preventDefault(); window.focus(); sonDemarrer(); pointeurs.set(ev.pointerId, pos(ev)); dernierTap = pos(ev); tapEnAttente = true; });
   cv.addEventListener("pointermove", ev => {
     if (!pointeurs.has(ev.pointerId)) return;
     pointeurs.set(ev.pointerId, pos(ev));
