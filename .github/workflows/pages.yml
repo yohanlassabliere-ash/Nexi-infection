@@ -20,7 +20,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false   # les publications attendent leur tour au lieu de s'annuler (sinon croix rouge sur main)
 
 jobs:
   publier:
