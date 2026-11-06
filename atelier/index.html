@@ -82,8 +82,9 @@
     details.guide .choix { min-width: 0; width: max(100%, 220px); left: auto; right: 0; }
     details.guide a { padding: 14px 12px; }
     main { display: flex; flex-direction: column; }
-    .droite { order: 1; }
-    .editeur { order: 2; height: 70vh; height: 70svh; border-right: 0; border-top: 2px solid var(--bord); }
+    .droite { display: contents; }   /* ses blocs se rangent un par un : jeu, messages, code, réglages */
+    .ecran { order: 1; } .console { order: 2; } .reglages { order: 4; }
+    .editeur { order: 3; height: 70vh; height: 70svh; border-right: 0; border-top: 2px solid var(--bord); }
     .ecran { flex: none; aspect-ratio: 16 / 9; }
     .console { font-size: 13px; padding: 10px 16px; }
     .reglages { max-height: none; padding: 6px 16px 12px; }
