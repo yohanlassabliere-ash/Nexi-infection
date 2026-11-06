@@ -236,7 +236,8 @@ function lancer() {
   const espion = "<script>window.onerror=function(m,s,l){parent.postMessage({nexiErreur:String(m),ligne:l},'*');};<\/script>";
   const code = zone.value.replace(/^(<!DOCTYPE html>)/i, "$1" + espion);   // même ligne : les numéros restent justes
   $("console").className = "console ok";
-  $("console").textContent = "Jeu relancé avec ton code. Clique dans le jeu pour jouer au clavier.";
+  $("console").textContent = "Jeu relancé avec ton code : le clavier pilote le jeu. Pour retaper du code, clique dans l'éditeur.";
+  $("jeu").onload = () => { try { $("jeu").focus(); $("jeu").contentWindow.focus(); } catch (err) { } };   // le clavier va directement au jeu
   $("jeu").srcdoc = code;
   majEtat();
 }
