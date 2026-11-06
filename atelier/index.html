@@ -64,6 +64,43 @@
   details.guide a + a { border-top: 1px solid var(--bord); }
   details.guide a:hover, details.guide a:focus-visible { background: #241a44; color: var(--or); }
   .ligneBoutons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+  .barreMobile, .surMobile { display: none; }
+  a.bouton { font: 13px var(--titre); color: var(--or); background: #241a44; border: 2px solid var(--or); padding: 7px 12px; text-decoration: none; text-align: center; }
+
+  /* ---------- Téléphone : tout s'empile, le jeu en haut, une barre d'actions en bas ---------- */
+  @media (max-width: 700px) {
+    html, body { height: auto; }
+    body { display: block; padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+    header { padding: 12px 16px; gap: 10px; }
+    h1 { font-size: 15px; margin: 0; width: 100%; }
+    .outils { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+    .outils > * { min-width: 0; }
+    .outils select, .outils .etat { grid-column: 1 / -1; }
+    .outils .espace, .outils .lancer, .outils .tel { display: none; }   /* ils sont dans la barre du bas */
+    .outils .etat { text-align: center; }
+    button, select, details.guide summary { font-size: 12px; min-height: 44px; padding: 8px 10px; width: 100%; }
+    details.guide .choix { min-width: 0; width: max(100%, 220px); left: auto; right: 0; }
+    details.guide a { padding: 14px 12px; }
+    main { display: flex; flex-direction: column; }
+    .droite { order: 1; }
+    .editeur { order: 2; height: 70vh; height: 70svh; border-right: 0; border-top: 2px solid var(--bord); }
+    .ecran { flex: none; aspect-ratio: 16 / 9; }
+    .console { font-size: 13px; padding: 10px 16px; }
+    .reglages { max-height: none; padding: 6px 16px 12px; }
+    .reglages h2 { font-size: 12px; margin: 14px 0 4px; }
+    .reglage { padding: 4px 0; gap: 8px; }
+    .reglage .valeur { max-width: 90px; }
+    .reglage a { display: inline-block; padding: 10px 2px 10px 8px; }
+    .numeros, textarea { font-size: 16px; line-height: 22px; }   /* 16 px : le téléphone ne zoome plus en tapant */
+    .numeros { min-width: 44px; padding: 10px 6px; }
+    .barreMobile { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--panneau); border-top: 2px solid var(--bord); }
+    .surMobile { display: block; }
+    .surPC { display: none; }
+    dialog { padding: 16px; }
+    .ligneBoutons > * { flex: 1 1 100%; min-height: 44px; }
+    a.bouton { display: flex; align-items: center; justify-content: center; }
+  }
 </style>
 </head>
 <body>
@@ -97,12 +134,17 @@
     <div class="reglages" id="reglages" aria-label="Réglages du jeu"></div>
   </div>
 </main>
+<nav class="barreMobile" aria-label="Actions">
+  <button class="lancer" id="lancerMobile">▶ LANCER</button>
+  <button class="tel" id="telephoneMobile">JOUER EN GRAND</button>
+</nav>
 <dialog id="fenetre">
   <h2>JOUE À TA VERSION</h2>
   <p id="consigne">Scanne ce QR code avec l'appareil photo de ton téléphone.</p>
   <canvas id="qr" width="10" height="10"></canvas>
   <div class="lien" id="lien"></div>
   <div class="ligneBoutons">
+    <a class="bouton surMobile" id="ouvrirJeu" href="#" target="_blank" rel="noopener">OUVRIR MON JEU</a>
     <button id="copier">COPIER LE LIEN</button>
     <button id="fermer">FERMER</button>
   </div>
@@ -114,6 +156,8 @@ const $ = (id) => document.getElementById(id);
 const zone = $("code"), numeros = $("numeros");
 let original = "", idOriginal = "";
 const CLE_BROUILLON = "nexi_atelier_brouillon";
+const surTelephone = () => matchMedia("(max-width: 700px)").matches;           // même seuil que le CSS
+const hauteurLigne = () => parseFloat(getComputedStyle(zone).lineHeight) || 18;   // 18 px sur PC, 22 sur téléphone
 
 // Les réglages qu'un visiteur peut changer : un lien saute à la ligne et sélectionne la valeur.
 // id = ce qu'on cherche dans le code ; apres = chercher seulement après cette ligne.
@@ -143,10 +187,10 @@ const REGLAGES = [
   { nom: "Nexi brûlé au bout de … coups", id: "apresCoups:", apres: "const ETATS_NEXI" },
   { nom: "Nexi paralysé au bout de … coups", id: "apresCoups:", apres: "foudre: {" },
   { nom: "Nexi empoisonné au bout de … coups", id: "apresCoups:", apres: "poison: {" },
-  { nom: "Couleur de la glace", id: "couleur:", apres: "glace:" },
+  { nom: "Couleur de la glace", id: "couleur:", apres: "glace:   {" },
   { nom: "Ralentissement de la glace", id: "force:", apres: "const EFFETS_ELEMENTS" },
   { nom: "Vol de vie du vampire", id: "part:", apres: "const EFFETS_ELEMENTS" },
-  { nom: "Dégâts de la lave au sol", id: "degatsParSec:", apres: "lave:" },
+  { nom: "Dégâts de la lave au sol", id: "degatsParSec:", apres: "lave:    {" },
   { groupe: "BOSS" },
   { nom: "Nom du Cheval de Troie", id: "troie:", apres: "const NOMS_BOSS" },
   { nom: "Nom du Tyran", id: "archonte:", apres: "const NOMS_BOSS" },
@@ -178,9 +222,10 @@ function allerAReglage(r) {
   const lignes = zone.value.split("\n"), t = trouverReglage(r, lignes);
   if (!t) return;
   let pos = 0; for (let i = 0; i < t.ligne - 1; i++) pos += lignes[i].length + 1;
+  if (surTelephone()) document.querySelector(".editeur").scrollIntoView({ block: "start" });   // l'éditeur est sous le jeu
   zone.focus();
   zone.setSelectionRange(pos + t.debut, pos + t.fin);   // la valeur est sélectionnée : il suffit de taper
-  zone.scrollTop = Math.max(0, (t.ligne - 6) * 18);
+  zone.scrollTop = Math.max(0, (t.ligne - 6) * hauteurLigne());
 }
 function afficherReglages() {
   const boite = $("reglages"), lignes = zone.value.split("\n");
@@ -215,9 +260,10 @@ zone.addEventListener("keydown", (e) => {
 function allerALigne(n) {
   const lignes = zone.value.split("\n");
   let pos = 0; for (let i = 0; i < n - 1 && i < lignes.length; i++) pos += lignes[i].length + 1;
+  if (surTelephone()) document.querySelector(".editeur").scrollIntoView({ block: "start" });
   zone.focus();
   zone.setSelectionRange(pos, pos + (lignes[n - 1] || "").length);
-  zone.scrollTop = Math.max(0, (n - 4) * 18);
+  zone.scrollTop = Math.max(0, (n - 4) * hauteurLigne());
 }
 function chercherLigne(motif) { const i = zone.value.split("\n").findIndex((l) => l.includes(motif)); return i < 0 ? null : i + 1; }
 
@@ -236,8 +282,11 @@ function lancer() {
   const espion = "<script>window.onerror=function(m,s,l){parent.postMessage({nexiErreur:String(m),ligne:l},'*');};<\/script>";
   const code = zone.value.replace(/^(<!DOCTYPE html>)/i, "$1" + espion);   // même ligne : les numéros restent justes
   $("console").className = "console ok";
-  $("console").textContent = "Jeu relancé avec ton code : le clavier pilote le jeu. Pour retaper du code, clique dans l'éditeur.";
-  $("jeu").onload = () => { try { $("jeu").focus(); $("jeu").contentWindow.focus(); } catch (err) { } };   // le clavier va directement au jeu
+  $("console").textContent = surTelephone()
+    ? "Jeu relancé avec ton code : touche l'écran du jeu pour jouer. « Jouer en grand » l'ouvre en plein écran."
+    : "Jeu relancé avec ton code : le clavier pilote le jeu. Pour retaper du code, clique dans l'éditeur.";
+  if (surTelephone() && window.scrollY > 80) document.querySelector(".ecran").scrollIntoView({ behavior: "smooth", block: "start" });   // on remonte voir le résultat
+  $("jeu").onload = () => { if (surTelephone()) return; try { $("jeu").focus(); $("jeu").contentWindow.focus(); } catch (err) { } };   // le clavier va directement au jeu
   $("jeu").srcdoc = code;
   majEtat();
 }
@@ -262,15 +311,20 @@ $("telephone").addEventListener("click", async () => {
   const lien = new URL("../jouer/", location.href).href + "#" + paquet.texte;
   const grille = qrCode(lien);
   $("lien").textContent = lien;
+  $("ouvrirJeu").href = lien;
   if (location.hostname === "localhost" || location.hostname === "127.0.0.1")
     $("consigne").textContent = "Attention : ce PC est ouvert en « localhost ». Ouvre l'atelier avec l'adresse IP affichée par le serveur pour que le téléphone puisse la joindre.";
   else if (location.protocol === "http:") $("consigne").textContent = "Mode sans Internet : connecte d'abord ton téléphone au Wi-Fi du stand, puis scanne le QR code.";
-  else $("consigne").textContent = "Scanne ce QR code avec l'appareil photo de ton téléphone.";
-  if (grille) { $("qr").hidden = false; dessinerQRCanvas($("qr"), grille, 340); }
+  else $("consigne").textContent = surTelephone()
+    ? "Tu es déjà sur ton téléphone : touche « Ouvrir mon jeu ». Pour l'envoyer à un ami, montre-lui ce QR code ou copie le lien."
+    : "Scanne ce QR code avec l'appareil photo de ton téléphone.";
+  if (grille) { $("qr").hidden = false; dessinerQRCanvas($("qr"), grille, surTelephone() ? 260 : 340); }
   else { $("qr").hidden = true; $("consigne").textContent = "Tu as fait trop de modifications pour un QR code : utilise « Télécharger mon code » puis envoie-toi le fichier."; }
   $("fenetre").showModal();
 });
 $("fermer").addEventListener("click", () => $("fenetre").close());
+$("lancerMobile").addEventListener("click", lancer);
+$("telephoneMobile").addEventListener("click", () => $("telephone").click());
 $("copier").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText($("lien").textContent); $("copier").textContent = "COPIÉ !"; }
   catch (e) { const r = document.createRange(); r.selectNodeContents($("lien")); getSelection().removeAllRanges(); getSelection().addRange(r); }

@@ -60,6 +60,34 @@
     .pasImpression { display: none; }
   }
   @page { size: A4; margin: 16mm 15mm; }
+  .versHaut { display: none; }
+
+  /* ---------- Téléphone : tableaux en fiches, boutons plus grands, retour au sommaire ---------- */
+  @media screen and (max-width: 640px) {
+    body { font-size: 16px; }
+    .page { padding-top: 20px; padding-bottom: 96px; }
+    h2 { font-size: 19px; margin-top: 40px; }
+    h3 { font-size: 15px; }
+    .lede { font-size: 17px; }
+    pre { font-size: 12.5px; padding: 12px; margin-left: -4px; margin-right: -4px; }
+    .schema { font-size: 12px; padding: 12px; }
+    .mission { padding: 2px 12px 10px; }
+    .encadre { padding: 10px 12px; }
+    .ouvrir { display: block; text-align: center; padding: 11px 12px; margin: 8px 0; }
+    .pasImpression .ouvrir { display: block; }
+    .encadre span.ouvrir { display: inline-block; padding: 2px 6px; margin: 0; }
+    .sommaire li { padding: 6px 0; }
+    .tableau { overflow: visible; }
+    .tableau table, .tableau tbody, .tableau tr, .tableau td { display: block; width: 100%; }
+    .tableau tr.entete { display: none; }   /* les titres de colonnes passent dans chaque fiche */
+    .tableau tr { border: 2px solid var(--trait); padding: 8px 12px; margin: 10px 0; }
+    .tableau td { border: 0; padding: 3px 0; }
+    .tableau td:first-child { font-weight: 600; }
+    .tableau td code { white-space: normal; overflow-wrap: anywhere; }
+    .tableau td[data-titre]:not(:first-child)::before { content: attr(data-titre); display: block; font: 11px var(--titre); color: var(--doux); letter-spacing: .5px; }
+    .versHaut { display: block; position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 5;
+      font: 12px var(--titre); color: #fff; background: var(--violet); padding: 12px 14px; text-decoration: none; box-shadow: 0 2px 8px rgba(29, 18, 54, .3); }
+  }
 </style>
 </head>
 <body>
@@ -72,7 +100,7 @@
 <div class="encadre"><b>COMMENT T'EN SERVIR</b><br>Les boutons <span class="ouvrir" style="margin:0">Ouvrir dans l'atelier</span> ouvrent l'atelier directement sur la bonne ligne, avec la valeur déjà sélectionnée : tu n'as plus qu'à taper. Dans le PDF, ils fonctionnent aussi (il faut Internet).</div>
 
 <h3>Sommaire</h3>
-<ol class="sommaire">
+<ol class="sommaire" id="sommaire">
   <li><a href="#atelier">L'atelier en 2 minutes</a></li>
   <li><a href="#bases">Les bases du code</a></li>
   <li><a href="#missions">Les missions de l'atelier</a></li>
@@ -509,5 +537,16 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
 </table></div>
 <p class="meta">Guide de Nexi : Infection — version 0.9.6 bêta. Le jeu ne collecte aucune donnée.</p>
 </div>
+<a class="versHaut pasImpression" href="#sommaire">↑ SOMMAIRE</a>
+<script>
+// Sur téléphone, chaque ligne de tableau devient une fiche : on recopie le titre de la colonne dans chaque case.
+document.querySelectorAll(".tableau table").forEach((t) => {
+  const titres = [...t.querySelectorAll("tr th")].map((th) => th.textContent.trim());
+  t.querySelectorAll("tr").forEach((tr) => {
+    if (tr.querySelector("th")) { tr.classList.add("entete"); return; }
+    tr.querySelectorAll("td").forEach((td, i) => { if (titres[i]) td.dataset.titre = titres[i]; });
+  });
+});
+</script>
 </body>
 </html>
