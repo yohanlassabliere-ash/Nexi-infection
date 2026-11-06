@@ -238,9 +238,6 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
   <tr><td><code>CHANCE_ELEMENTAIRE: 0.15</code></td><td>15 % des ennemis sont de feu ou de foudre (halo coloré), à partir de la salle 3.</td></tr>
 </table></div>
 
-<h3>MODE DÉMO</h3>
-<p><code>const MODE_DEMO = false;</code> Avec <code>true</code>, chaque porte propose de choisir la salle suivante parmi les 10 prochaines : pratique au stand pour aller voir un boss tout de suite.</p>
-
 <h3>NOMS DES BOSS ET HISTOIRE</h3>
 <p><code>NOMS_BOSS</code> et <code>TITRES_BOSS</code> : les noms affichés en grand à l'arrivée de chaque boss. <code>HISTOIRE.RENCONTRES_AVANT_VER_ULTIME</code> : combien de fois on affronte le Tyran avant de trouver le Ver Ultime (mets 1 pour voir la fin plus vite).</p>
 
@@ -381,7 +378,7 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
   <tr><td>changer la pose de Nexi au repos</td><td><code>POSES</code>, ligne <code>repos1</code></td><td>Change les angles <code>brasF</code> ou <code>epee</code> (de -180 à 180).</td></tr>
   <tr><td>renommer un boss</td><td><code>NOMS_BOSS</code></td><td>Change le texte entre guillemets.</td></tr>
   <tr><td>un boss plus dur</td><td><code>BOSS</code></td><td>Monte son <code>pv</code> ou ses <code>degats</code> ; <code>GAIN_PAR_CYCLE</code> pour tous.</td></tr>
-  <tr><td>voir le Tyran tout de suite</td><td><code>MODE_DEMO</code></td><td>Mets <code>true</code>, puis choisis la salle 15 à la première porte.</td></tr>
+  <tr><td>voir le Tyran tout de suite</td><td><code>BOSS</code></td><td><code>ARCHONTE_TOUS_LES: 1</code> : le Tyran arrive en salle 7.</td></tr>
   <tr><td>voir la fin du jeu</td><td><code>HISTOIRE</code> et <code>BOSS</code></td><td><code>RENCONTRES_AVANT_VER_ULTIME: 1</code> et <code>ARCHONTE_TOUS_LES: 1</code>.</td></tr>
   <tr><td>créer une arme</td><td><code>ARMES</code></td><td>Copie la ligne <code>katana</code>, change le nom de la ligne (<code>monArme:</code>), le <code>nom</code> et les chiffres. Elle apparaîtra dans les coffres.</td></tr>
   <tr><td>inventer un élément</td><td><code>EFFETS_ELEMENTS</code></td><td>Copie une ligne, renomme-la, choisis un <code>effet</code> et une <code>couleur</code>, puis écris son nom dans <code>ELEMENT</code>.</td></tr>

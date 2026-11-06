@@ -91,16 +91,6 @@ const MONSTRES = {
 
 
 // ==================================================================
-// ★ DÉBUTANT — MODE DÉMO (pour le stand)
-// ==================================================================
-// true = à chaque porte, tu choisis la prochaine salle parmi les 10 suivantes
-// (pratique pour aller voir directement un boss ou le Tyran).
-// false = le jeu normal : on descend salle par salle.
-const MODE_DEMO = false;
-const VERSION = "V0.9.6 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
-
-
-// ==================================================================
 // ★ DÉBUTANT — LES NOMS DES BOSS
 // ==================================================================
 // Rebaptise les boss comme tu veux ! Le nom s'affiche en grand à leur arrivée.
@@ -2404,7 +2394,11 @@ function rattrapage(depuis, jusqua) {
    ★★ CODEUR — ÉTAPE 4 : SAUVEGARDE (automatique, code, QR, fichier)
    Tout reste sur le téléphone du joueur : aucune donnée n'est envoyée.
    ================================================================== */
-const CLE_SAUVEGARDE = "nexi_infection_sauvegarde";   // nom de la sauvegarde dans le navigateur
+const VERSION = "V0.9.6 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
+// Mode démo (pour le stand) : à chaque porte, on choisit la salle suivante parmi les 10 prochaines.
+// Il s'active tout seul sur l'adresse /demo/ (ou avec ?demo à la fin de l'adresse), avec sa propre sauvegarde.
+const MODE_DEMO = /[?&]demo\b/.test(location.search);
+const CLE_SAUVEGARDE = "nexi_infection_sauvegarde" + (MODE_DEMO ? "_demo" : "");   // nom de la sauvegarde dans le navigateur
 const BASE32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";     // pas de I, L, O, U : on ne les confond pas
 let partieSauvee = null;                               // dernière photo de la partie en cours
 
