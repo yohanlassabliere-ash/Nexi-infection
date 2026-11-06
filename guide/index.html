@@ -236,14 +236,21 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
   <tr><td><code>MULT_DEGATS: 1</code></td><td>Multiplie leurs dégâts (0.5 = partie tranquille).</td></tr>
   <tr><td><code>GAIN_PAR_SALLE: 0.045</code></td><td>À chaque salle, les ennemis deviennent 4,5 % plus forts. Ça se cumule : en salle 30, ils sont 3,6 fois plus forts.</td></tr>
   <tr><td><code>ENNEMIS_DEPART: 2</code> / <code>ENNEMIS_MAX: 9</code></td><td>Le nombre d'ennemis dans la 1re salle, et le maximum.</td></tr>
-  <tr><td><code>CHANCE_ELEMENTAIRE: 0.15</code></td><td>15 % des ennemis sont de feu ou de foudre (halo coloré), à partir de la salle 3.</td></tr>
+  <tr><td><code>CHANCE_ELEMENTAIRE: 0.15</code></td><td>15 % des ennemis sont élémentaires (halo de la couleur de l'élément), à partir de la salle 3.</td></tr>
+  <tr><td><code>ELEMENTS: ["feu", "foudre"]</code></td><td>Les éléments possibles pour ces ennemis : n'importe quel nom de <code>EFFETS_ELEMENTS</code> (<code>"poison"</code>, <code>"glace"</code>, <code>"lave"</code>, <code>"vampire"</code>…). Ils infligent leur effet à Nexi (voir juste en dessous).</td></tr>
 </table></div>
 
-<h3>LES ÉTATS SUBIS PAR NEXI (brûlé, paralysé)</h3>
-<pre>BRULURE_APRES_COUPS: <span class="v">1</span>,     <span class="c">// Brûlé au bout de combien de coups d'ennemis de feu. Essaie 3.</span>
-BRULURE_APRES_DEGATS: <span class="v">0</span>,    <span class="c">// Ou au bout de combien de dégâts de feu reçus.</span></pre>
-<p>Les ennemis de feu brûlent Nexi, ceux de foudre le paralysent. Dans <code>ETATS_NEXI</code>, tu choisis <b>quand</b> : au bout de X coups (<code>_APRES_COUPS</code>) ou de X dégâts reçus (<code>_APRES_DEGATS</code>). Le premier des deux atteint déclenche l'état, puis le compteur repart de zéro. <code>1</code> coup = à chaque fois ; <code>0</code> coupe ce compteur ; <code>0</code> aux deux = jamais. <code>BRULURE_DUREE</code>, <code>BRULURE_PV</code> et <code>PARALYSIE_DUREE</code> règlent la force de l'état.</p>
-<div class="encadre essaie"><b>ESSAIE</b><br>Pour que Nexi ne brûle qu'après avoir encaissé 30 dégâts de feu : <code>BRULURE_APRES_COUPS: 0</code> et <code>BRULURE_APRES_DEGATS: 30</code>. Pour un Nexi qui brûle à chaque coup et longtemps : <code>BRULURE_DUREE: 6</code>.</div>
+<h3>LES ÉTATS SUBIS PAR NEXI</h3>
+<pre>feu: { apresCoups: <span class="v">1</span>, apresDegats: <span class="v">0</span>, degatsParSec: <span class="v">2.5</span>, duree: <span class="v">2.5</span> },   <span class="c">// Essaie apresCoups: 3</span></pre>
+<p>Les éléments marchent <b>dans les deux sens</b> : un ennemi « de glace » ralentit Nexi, un ennemi « de poison » l'empoisonne, un ennemi « de lave » pose une flaque sous ses pieds, un ennemi « vampire » se soigne en le frappant. L'effet est celui de la ligne de l'élément dans <code>EFFETS_ELEMENTS</code>. <code>ETATS_NEXI</code> règle, élément par élément, <b>quand</b> Nexi le subit :</p>
+<div class="tableau"><table>
+  <tr><td><code>apresCoups</code></td><td>L'état arrive au bout de X coups de cet élément (<code>1</code> = à chaque coup).</td></tr>
+  <tr><td><code>apresDegats</code></td><td>Ou au bout de X dégâts reçus de cet élément. Le premier des deux atteint déclenche l'état, puis le compteur repart de zéro.</td></tr>
+  <tr><td><code>0</code></td><td>Coupe ce compteur. <code>0</code> aux deux : Nexi n'a jamais cet état.</td></tr>
+  <tr><td>les autres réglages</td><td><code>degatsParSec</code>, <code>duree</code>, <code>force</code>… remplacent ceux de <code>EFFETS_ELEMENTS</code>, pour Nexi seulement (pour qu'un élément soit fort contre les ennemis et plus doux contre Nexi).</td></tr>
+</table></div>
+<p>Pour choisir quels éléments les ennemis peuvent avoir : <code>ELEMENTS</code> dans <code>MONSTRES</code>. Un élément inventé (comme l'acide de la recette A) marche aussi : ajoute son nom dans <code>ELEMENTS</code>, et il touchera Nexi à chaque coup avec ses propres réglages, sauf si tu lui ajoutes une ligne dans <code>ETATS_NEXI</code>.</p>
+<div class="encadre essaie"><b>ESSAIE</b><br>Des ennemis de glace et de poison partout : <code>CHANCE_ELEMENTAIRE: 1</code> et <code>ELEMENTS: ["glace", "poison"]</code>. Pour que Nexi ne brûle qu'après avoir encaissé 30 dégâts de feu : <code>feu: { apresCoups: 0, apresDegats: 30, … }</code>.</div>
 
 <h3>NOMS DES BOSS ET HISTOIRE</h3>
 <p><code>NOMS_BOSS</code> et <code>TITRES_BOSS</code> : les noms affichés en grand à l'arrivée de chaque boss. <code>HISTOIRE.RENCONTRES_AVANT_VER_ULTIME</code> : combien de fois on affronte le Tyran avant de trouver l'Abyssal Worm (mets 1 pour voir la fin plus vite).</p>
@@ -279,9 +286,9 @@ BRULURE_APRES_DEGATS: <span class="v">0</span>,    <span class="c">// Ou au bout
   <tr><td><code>"volDeVie"</code></td><td>Nexi récupère une part des dégâts qu'il inflige.</td><td><code>part</code> (0.15 = 15 %)</td></tr>
   <tr><td><code>"flaque"</code></td><td>Chaque coup laisse une flaque au sol (la lave) : les ennemis dedans brûlent et ralentissent.</td><td><code>degatsParSec</code>, <code>force</code>, <code>duree</code> (vie de la flaque), <code>largeur</code></td></tr>
 </table></div>
-<p><b>Au bout de X coups ou X dégâts :</b> ajoute <code>coupsAvant: 3</code> à une ligne et l'effet ne se déclenche qu'au 3e coup sur le même ennemi ; ou <code>degatsAvant: 40</code> et il se déclenche quand l'ennemi a encaissé 40 dégâts. Une petite jauge de la couleur de l'élément se remplit au-dessus de l'ennemi, puis repart de zéro. Exemple, un feu qui n'enflamme qu'au 3e coup mais brûle fort :</p>
-<pre>feu: { effet: <span class="t">"brulure"</span>, couleur: <span class="t">"#ff8a3c"</span>, magique: <span class="v">true</span>, degatsParSec: <span class="v">15</span>, duree: <span class="v">3</span>, coupsAvant: <span class="v">3</span> },</pre>
-<p>(La foudre a déjà son propre compteur : <code>coupsPourParalyser</code>.)</p>
+<p><b>Au bout de X coups ou X dégâts :</b> ajoute <code>apresCoups: 3</code> à une ligne et l'effet ne se déclenche qu'au 3e coup sur le même ennemi ; ou <code>apresDegats: 40</code> et il se déclenche quand l'ennemi a encaissé 40 dégâts. Une petite jauge de la couleur de l'élément se remplit au-dessus de l'ennemi, puis repart de zéro. Exemple, un feu qui n'enflamme qu'au 3e coup mais brûle fort :</p>
+<pre>feu: { effet: <span class="t">"brulure"</span>, couleur: <span class="t">"#ff8a3c"</span>, magique: <span class="v">true</span>, degatsParSec: <span class="v">15</span>, duree: <span class="v">3</span>, apresCoups: <span class="v">3</span> },</pre>
+<p>(La foudre a déjà son propre compteur : <code>coupsPourParalyser</code>.) Pour l'autre sens, quand un ennemi élémentaire touche Nexi, c'est <code>ETATS_NEXI</code> (section 5).</p>
 <p>Deux options de plus : <code>magique: true</code> permet de blesser les Spectres sans compétence, <code>spectresImmunises: true</code> rend les Spectres insensibles à l'élément. <code>couleur</code> colore le nom de l'élément, les particules et l'onde.</p>
 <div class="encadre essaie"><b>À TOI</b><br>Pour créer ton élément : copie une ligne, change le nom, l'effet, les chiffres et la couleur, puis écris ce nom dans <code>ELEMENT</code> (mission 6). Ajouter un 7e type d'effet demande d'écrire du code dans la fonction <code>appliquerElementType</code> : c'est un vrai défi de codeur. La recette A (section 9) montre comment la flaque de lave a été ajoutée.</div>
 
@@ -294,7 +301,7 @@ BRULURE_APRES_DEGATS: <span class="v">0</span>,    <span class="c">// Ou au bout
 
 <h3>BESTIAIRE</h3>
 <pre>ver: { nom: <span class="t">"Ver informatique"</span>, pv: <span class="v">18</span>, degats: <span class="v">10</span>, vitesse: <span class="v">30</span>, apparitionDes: <span class="v">1</span>, poids: <span class="v">3</span> },</pre>
-<p>Une ligne par ennemi. <code>apparitionDes</code> = première salle où il peut apparaître, <code>poids</code> = sa fréquence (plus grand = plus courant). <code>spectre: true</code> le rend résistant aux coups physiques, <code>defense: 0.5</code> lui fait perdre moitié moins de PV. Le comportement de chaque ennemi est codé dans la fonction <code>majEnnemi</code>. Pour inventer un ennemi : <code>comme</code> (copier un ennemi existant), <code>teinte</code> (changer ses couleurs), <code>dessin</code> et <code>palette</code> (son propre dessin). Voir la recette B, section 9.</p>
+<p>Une ligne par ennemi. <code>apparitionDes</code> = première salle où il peut apparaître, <code>poids</code> = sa fréquence (plus grand = plus courant). <code>spectre: true</code> le rend résistant aux coups physiques, <code>defense: 0.5</code> lui fait perdre moitié moins de PV. Le comportement de chaque ennemi est codé dans la fonction <code>majEnnemi</code>. <code>element: "glace"</code> rend cet ennemi toujours élémentaire. Pour inventer un ennemi : <code>comme</code> (copier un ennemi existant), <code>teinte</code> (changer ses couleurs), <code>dessin</code> et <code>palette</code> (son propre dessin). Voir la recette B, section 9.</p>
 
 <h3>PROGRESSION DES SALLES</h3>
 <p><code>PROGRESSION.CYCLE</code> décrit un cycle de 6 salles : on ajoute des petits ennemis, puis des gros, puis le mini-boss (<code>elite: true</code>). Juste avant chaque mini-boss, le jeu insère une salle de repos (Terminal). Chaque nouveau cycle recommence avec un ennemi de plus.</p>
@@ -396,8 +403,9 @@ BRULURE_APRES_DEGATS: <span class="v">0</span>,    <span class="c">// Ou au bout
   <tr><td>de la lave au sol</td><td><code>ELEMENT</code></td><td><code>const ELEMENT = "lave";</code> (<a href="#pasapas">recette A</a>).</td></tr>
   <tr><td>un nouveau monstre</td><td><code>BESTIAIRE</code> et <code>PETITS</code></td><td>Copie une ligne avec <code>comme</code> et <code>teinte</code> (<a href="#pasapas">recette B</a>).</td></tr>
   <tr><td>un nouveau mini-boss</td><td><code>BOSS</code> et <code>ORDRE</code></td><td>Une ligne avec <code>comme: "troie"</code> (<a href="#pasapas">recette C</a>).</td></tr>
-  <tr><td>que Nexi brûle moins souvent</td><td><code>ETATS_NEXI</code></td><td><code>BRULURE_APRES_COUPS: 3</code> : brûlé au 3e coup de feu seulement.</td></tr>
-  <tr><td>un effet au bout de X coups</td><td><code>EFFETS_ELEMENTS</code></td><td>Ajoute <code>coupsAvant: 3</code> (ou <code>degatsAvant: 40</code>) à la ligne de l'élément.</td></tr>
+  <tr><td>des ennemis de glace, poison, lave…</td><td><code>MONSTRES</code></td><td><code>ELEMENTS: ["glace", "poison", "lave"]</code> et monte <code>CHANCE_ELEMENTAIRE</code>.</td></tr>
+  <tr><td>que Nexi brûle moins souvent</td><td><code>ETATS_NEXI</code></td><td>Ligne <code>feu</code> : <code>apresCoups: 3</code> = brûlé au 3e coup de feu seulement.</td></tr>
+  <tr><td>un effet au bout de X coups</td><td><code>EFFETS_ELEMENTS</code></td><td>Ajoute <code>apresCoups: 3</code> (ou <code>apresDegats: 40</code>) à la ligne de l'élément.</td></tr>
   <tr><td>plus de coffres</td><td><code>LOOT</code></td><td><code>CHANCE_COFFRE: 1</code> = un coffre par salle.</td></tr>
   <tr><td>moins de pièges</td><td><code>PIEGES</code></td><td><code>CHANCE_PAR_SALLE: 0</code> pour les supprimer.</td></tr>
   <tr><td>un nouveau bonus de porte</td><td><code>LISTE_BONUS</code></td><td>Copie une ligne et adapte-la (mission 5).</td></tr>

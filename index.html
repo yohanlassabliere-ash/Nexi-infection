@@ -86,24 +86,28 @@ const MONSTRES = {
   GAIN_PAR_SALLE: 0.045, // Les PV des ennemis sont multipliés par 1,045 à chaque salle (ça s'accumule vite !). Essaie 0.1 pour un donjon brutal.
   ENNEMIS_DEPART: 2,     // Nombre d'ennemis dans la toute première salle.
   ENNEMIS_MAX: 9,        // Nombre maximum d'ennemis par salle.
-  CHANCE_ELEMENTAIRE: 0.15, // Chance qu'un ennemi soit « de feu » ou « de foudre » (à partir de la salle 3).
+  CHANCE_ELEMENTAIRE: 0.15, // Chance qu'un ennemi soit élémentaire (à partir de la salle 3).
+  ELEMENTS: ["feu", "foudre"], // Les éléments que peuvent avoir les ennemis : n'importe quel nom de EFFETS_ELEMENTS.
+                               // Essaie ["feu", "foudre", "poison", "glace", "lave"].
 };
 
 
 // ==================================================================
-// ★ DÉBUTANT — LES ÉTATS SUBIS PAR NEXI (brûlé, paralysé)
+// ★ DÉBUTANT — LES ÉTATS SUBIS PAR NEXI
 // ==================================================================
-// Les ennemis « de feu » brûlent Nexi, ceux « de foudre » le paralysent.
-// L'état arrive au bout de X coups OU de X dégâts reçus (le premier atteint).
-// 1 coup = à chaque fois. 0 = ce compteur est coupé (0 aux deux = jamais).
+// Un ennemi élémentaire inflige à Nexi l'effet de son élément (le même que dans
+// EFFETS_ELEMENTS : brûlure, poison, paralysie, ralentissement, vol de vie, lave au sol).
+// apresCoups  = l'état arrive au bout de X coups de cet élément (1 = à chaque coup)
+// apresDegats = ou au bout de X dégâts reçus de cet élément (le premier atteint gagne)
+//   0 = ce compteur est coupé ; 0 aux deux = Nexi n'a jamais cet état.
+// Les autres réglages (degatsParSec, duree…) remplacent ceux de EFFETS_ELEMENTS, mais pour Nexi seulement.
+// Un élément absent de cette liste touche Nexi à chaque coup, avec ses réglages de EFFETS_ELEMENTS.
 const ETATS_NEXI = {
-  BRULURE_APRES_COUPS: 1,     // Brûlé au bout de combien de coups d'ennemis de feu. Essaie 3.
-  BRULURE_APRES_DEGATS: 0,    // Ou au bout de combien de dégâts de feu reçus. Essaie 30 (et 0 aux coups).
-  BRULURE_DUREE: 2.5,         // Durée de la brûlure, en secondes.
-  BRULURE_PV: 2,              // PV perdus toutes les 0,8 seconde quand Nexi brûle.
-  PARALYSIE_APRES_COUPS: 1,   // Paralysé au bout de combien de coups d'ennemis de foudre.
-  PARALYSIE_APRES_DEGATS: 0,  // Ou au bout de combien de dégâts de foudre reçus.
-  PARALYSIE_DUREE: 0.5,       // Durée de la paralysie, en secondes.
+  feu: { apresCoups: 1, apresDegats: 0, degatsParSec: 2.5, duree: 2.5 },   // Essaie apresCoups: 3
+  foudre: { apresCoups: 1, apresDegats: 0, dureeParalysie: 0.5, degatsBonus: 0 },
+  poison: { apresCoups: 1, apresDegats: 0, degatsParSec: 1, duree: 5 },
+  glace: { apresCoups: 1, apresDegats: 0, force: 0.5, duree: 2 },
+  lave: { apresCoups: 2, apresDegats: 0, degatsParSec: 4, duree: 3 },
 };
 
 
@@ -188,9 +192,10 @@ const SOUS_TITRE_KO = "Nexi a été corrompu.";
 // couleur  = couleur de l'élément à l'écran (code hexadécimal)
 // magique  = true → l'attaque légère blesse aussi les Spectres
 // spectresImmunises = true → les Spectres ignorent cet élément
-// coupsAvant  = 3 → l'effet ne se déclenche qu'au 3e coup (une jauge se remplit au-dessus de l'ennemi)
-// degatsAvant = 40 → l'effet se déclenche quand l'ennemi a encaissé 40 dégâts
+// apresCoups  = 3 → l'effet ne se déclenche qu'au 3e coup (une jauge se remplit au-dessus de l'ennemi)
+// apresDegats = 40 → l'effet se déclenche quand l'ennemi a encaissé 40 dégâts
 //   (le premier des deux atteint ; sans eux, l'effet arrive à chaque coup)
+// Les mêmes éléments peuvent toucher Nexi : voir ELEMENTS (dans MONSTRES) et ETATS_NEXI.
 const EFFETS_ELEMENTS = {
   feu:     { effet: "brulure",   couleur: "#ff8a3c", magique: true, degatsParSec: 6, duree: 3 },
   poison:  { effet: "cumul",     couleur: "#8CFF3A", spectresImmunises: true, degatsParSec: 2.5, duree: 5, cumulMax: 5 },
@@ -260,6 +265,7 @@ const LOOT = {
 //   comme: "ver"   → il se comporte, se dessine et a la taille d'un ennemi existant
 //   teinte: 180    → décale ses couleurs (en degrés, de 0 à 360 : 180 = couleurs opposées)
 //   dessin: [...], palette: {...} → son propre dessin en lettres (dessin2 = 2e image de l'animation)
+//   element: "glace" → cet ennemi est toujours de cet élément (un nom de EFFETS_ELEMENTS)
 // N'oublie pas d'ajouter son nom dans PETITS ou GROS (PROGRESSION, juste en dessous).
 const BESTIAIRE = {
   ver:      { nom: "Ver informatique",  pv: 18, degats: 10, vitesse: 30, apparitionDes: 1, poids: 3 },
@@ -1430,10 +1436,13 @@ function nouvelEnnemi(type, d, x, n, f, fDeg, pv) {
 }
 // Certains ennemis sont « élémentaires » : un peu plus résistants, leurs coups brûlent ou paralysent Nexi
 function rendreElementaire(type, n) {
+  const d = BESTIAIRE[type];
+  if (d && d.element && EFFETS_ELEMENTS[d.element]) return d.element;   // élément imposé dans le BESTIAIRE
   if (type === "parasite" || n < 3 || Math.random() >= MONSTRES.CHANCE_ELEMENTAIRE) return null;
-  return Math.random() < 0.5 ? "feu" : "foudre";
+  const liste = (MONSTRES.ELEMENTS || ["feu", "foudre"]).filter(el => EFFETS_ELEMENTS[el] && EFFETS_ELEMENTS[el].effet);
+  return liste.length ? liste[Math.floor(Math.random() * liste.length)] : null;
 }
-function finirEnnemiElementaire(e) { if (e.element) { e.pv = e.pvMax = e.pvMax * 1.25; e.nom = e.nom + (e.element === "feu" ? " de feu" : " de foudre"); } return e; }
+function finirEnnemiElementaire(e) { if (e.element) { e.pv = e.pvMax = e.pvMax * 1.25; e.nom = e.nom + " de " + e.element; } return e; }
 
 // ---------- Dégâts infligés ----------
 function immunise(e) { if (e.immuTxt <= 0) { nombre(e.x + e.w / 2, e.y - 8, "IMMUNISÉ", "#c9b0ff"); e.immuTxt = 0.6; } }
@@ -1475,12 +1484,12 @@ function appliquerElementType(e, el, dmg = 0) {
   if (e.element && e.element === el) return;   // un ennemi de feu ne brûle pas, un ennemi de foudre ne se paralyse pas
   if (e.spectre && F.spectresImmunises && !(e.materialise > 0)) { immunise(e); return; }
   const coul = COUL_ELEMENT[el];
-  if (F.coupsAvant > 1 || F.degatsAvant > 0) { // l'effet attend X coups ou X dégâts
+  if (F.apresCoups > 1 || F.apresDegats > 0) { // l'effet attend X coups ou X dégâts
     const c = (e.charges = e.charges || {})[el] = (e.charges[el] || { coups: 0, degats: 0 });
     c.coups++; c.degats += dmg;
-    const parDegats = F.degatsAvant > 0 && !(F.coupsAvant > 1 && c.coups / F.coupsAvant > c.degats / F.degatsAvant);
-    if (!((F.coupsAvant > 1 && c.coups >= F.coupsAvant) || (F.degatsAvant > 0 && c.degats >= F.degatsAvant))) {
-      e.jauge = parDegats ? c.degats : c.coups; e.jaugeMax = parDegats ? F.degatsAvant : F.coupsAvant; e.jaugeCoul = coul;
+    const parDegats = F.apresDegats > 0 && !(F.apresCoups > 1 && c.coups / F.apresCoups > c.degats / F.apresDegats);
+    if (!((F.apresCoups > 1 && c.coups >= F.apresCoups) || (F.apresDegats > 0 && c.degats >= F.apresDegats))) {
+      e.jauge = parDegats ? c.degats : c.coups; e.jaugeMax = parDegats ? F.apresDegats : F.apresCoups; e.jaugeCoul = coul;
       return;
     }
     c.coups = 0; c.degats = 0; e.jauge = 0;
@@ -1508,16 +1517,24 @@ function appliquerElementType(e, el, dmg = 0) {
 // ---------- Effet « flaque » : une nappe au sol (la lave, par exemple) ----------
 // Elle reste « duree » secondes ; un ennemi qui a les pieds dedans brûle et ralentit.
 // Un nouveau coup au même endroit ravive la flaque au lieu d'en poser une autre.
-function poserFlaque(cx, F, coul) {
+function poserFlaque(cx, F, coul, contreNexi) {   // contreNexi : flaque posée par un ennemi, elle blesse Nexi
   const w = F.largeur || 30, vie = F.duree || 4;
-  const proche = flaques.find(f => Math.abs(f.x + f.w / 2 - cx) < w * 0.6);
+  const proche = flaques.find(f => !!f.contreNexi === !!contreNexi && Math.abs(f.x + f.w / 2 - cx) < w * 0.6);
   if (proche) { proche.vie = Math.max(proche.vie, vie); return; }
   if (flaques.length >= 8) flaques.shift();   // pas plus de 8 flaques à la fois
-  flaques.push({ x: clamp(cx - w / 2, 0, MONDE.LARGEUR_SALLE - w), w, vie, vieMax: vie, F, coul });
+  flaques.push({ x: clamp(cx - w / 2, 0, MONDE.LARGEUR_SALLE - w), w, vie, vieMax: vie, F, coul, contreNexi: !!contreNexi });
 }
 function majFlaques(dt) {
   for (const f of flaques) {
     f.vie -= dt;
+    if (f.contreNexi) { // Nexi a les pieds dedans : il brûle et ralentit
+      if (J && J.auSol && J.x + J.w > f.x + 2 && J.x < f.x + f.w - 2 && !aEffetArmure("bypass")) {
+        J.brule = Math.max(J.brule || 0, 0.6); J.bruleDps = f.F.degatsParSec || 0; J.bruleCoul = f.coul;
+        if (f.F.force) { J.ralenti = Math.max(J.ralenti || 0, 0.3); J.ralentiForce = Math.max(0, Math.min(0.9, f.F.force)); }
+      }
+      if (Math.random() < dt * 6) particule(f.x + rnd(2, f.w - 2), SOL - 2, rnd(-6, 6), rnd(-50, -20), Math.random() < 0.5 ? f.coul : "#ffd84d", 0.5);
+      continue;
+    }
     for (const e of ennemis) {
       if (e.mort || e.y + e.h < SOL - 3 || e.x + e.w < f.x || e.x > f.x + f.w) continue;   // il faut avoir les pieds dedans
       e.brulure = Math.max(e.brulure, 0.6); e.brulureDps = f.F.degatsParSec || 0; e.brulureCoul = f.coul;
@@ -1698,7 +1715,7 @@ function majEnnemi(e, dt) {
       } else {
         e.chrono -= dt;
         const rayon = { x: ec - 3, y: e.y + e.h, w: 6, h: SOL - (e.y + e.h) };
-        if (chevauche(rayon, corpsJoueur())) blesserJoueur(e.degats, ec, e.element);
+        if (chevauche(rayon, corpsJoueur())) blesserJoueur(e.degats, ec, e.element, e);
         if (e.chrono <= 0) { e.etat = "normal"; e.minuteur = e.def.cadenceTir; }
       }
       break;
@@ -1719,7 +1736,7 @@ function majEnnemi(e, dt) {
       } else if (e.etat === "frappe") {
         e.chrono -= dt;
         const hb = { x: e.dir > 0 ? e.x + e.w : e.x - 22, y: e.y + 4, w: 22, h: e.h - 4 };
-        if (!e.aFrappe && chevauche(hb, corpsJoueur())) { blesserJoueur(e.degats, ec, e.element); e.aFrappe = true; }
+        if (!e.aFrappe && chevauche(hb, corpsJoueur())) { blesserJoueur(e.degats, ec, e.element, e); e.aFrappe = true; }
         if (e.chrono <= 0) { e.etat = "repos"; e.chrono = 0.8; }
       } else { e.chrono -= dt; if (e.chrono <= 0) e.etat = "normal"; }
       break;
@@ -1734,19 +1751,17 @@ function majEnnemi(e, dt) {
     }
   }
   e.x = clamp(e.x, 0, MONDE.LARGEUR_SALLE - e.w);
-  if (e.element && Math.random() < 0.35) particule(e.x + rnd(0, e.w), e.y + rnd(0, e.h), rnd(-8, 8), rnd(-30, -10), e.element === "feu" ? (Math.random() < 0.5 ? "#ff8a3c" : "#ffd84d") : (Math.random() < 0.5 ? "#2af5ff" : "#ffffff"), 0.35);
-  if (e.modele !== "parasite" && e.modele !== "drone" && chevauche(e, corpsJoueur())) blesserJoueur(e.degats * (e.modele === "trojan" ? 0.4 : 1), ec, e.element);
+  if (e.element && Math.random() < 0.35) particule(e.x + rnd(0, e.w), e.y + rnd(0, e.h), rnd(-8, 8), rnd(-30, -10), Math.random() < 0.5 ? COUL_ELEMENT[e.element] : "#ffffff", 0.35);
+  if (e.modele !== "parasite" && e.modele !== "drone" && chevauche(e, corpsJoueur())) blesserJoueur(e.degats * (e.modele === "trojan" ? 0.4 : 1), ec, e.element, e);
 }
 
 // ---------- Dégâts reçus par Nexi ----------
-function blesserJoueur(dmg, sourceX, element) {
+function blesserJoueur(dmg, sourceX, element, source) {
   if (J.invul > 0 || J.invisible > 0 || etat !== "jeu") return;
-  const E = ETATS_NEXI;
-  if (element === "feu" && etatNexiPret("feu", dmg, E.BRULURE_APRES_COUPS, E.BRULURE_APRES_DEGATS)) { J.brule = E.BRULURE_DUREE; nombre(J.x + J.w / 2, J.y - 14, "BRÛLÉ", "#ff8a3c"); }
-  if (element === "foudre" && etatNexiPret("foudre", dmg, E.PARALYSIE_APRES_COUPS, E.PARALYSIE_APRES_DEGATS)) { J.fige = Math.max(J.fige, E.PARALYSIE_DUREE); nombre(J.x + J.w / 2, J.y - 14, "PARALYSÉ", "#2af5ff"); }
   if (J.virus === "troie") dmg *= 1.2;
   dmg *= 50 / (50 + defenseTotale());                     // l'armure réduit les dégâts
   if (JOUEUR.UN_COUP_KO) dmg = J.pv;
+  if (element) appliquerEtatNexi(element, dmg, source);   // brûlé, empoisonné, paralysé… (voir ETATS_NEXI)
   J.pv -= dmg; J.invul = 1; J.touche = 0.3; son("touche"); vibrer(60);
   J.vy = Math.min(J.vy, -110); J.auSol = false;
   J.kbx = (J.x + J.w / 2 < sourceX ? -1 : 1) * 80;
@@ -1754,13 +1769,29 @@ function blesserJoueur(dmg, sourceX, element) {
   nombre(J.x + J.w / 2, J.y - 4, "-" + Math.round(dmg), C.corail);
   if (J.pv <= 0) mourir();
 }
-// Compte les coups et les dégâts reçus d'un élément ; dit si l'état (brûlé, paralysé) se déclenche (voir ETATS_NEXI)
-function etatNexiPret(el, dmg, apresCoups, apresDegats) {
-  if (!(apresCoups > 0) && !(apresDegats > 0)) return false;   // 0 aux deux : jamais
+// Un ennemi élémentaire touche Nexi : on compte les coups et les dégâts, puis on applique l'effet de l'élément.
+// Réglages : ceux de EFFETS_ELEMENTS, remplacés par ceux de ETATS_NEXI quand ils y sont.
+function appliquerEtatNexi(el, dmg, source) {
+  if (!EFFETS_ELEMENTS[el]) return;
+  const F = Object.assign({}, EFFETS_ELEMENTS[el], ETATS_NEXI[el] || {});
+  const apresCoups = F.apresCoups === undefined ? 1 : F.apresCoups, apresDegats = F.apresDegats || 0;
+  if (!(apresCoups > 0) && !(apresDegats > 0)) return;   // 0 aux deux : jamais
   const c = (J.charges = J.charges || {})[el] = (J.charges[el] || { coups: 0, degats: 0 });
   c.coups++; c.degats += dmg;
-  if ((apresCoups > 0 && c.coups >= apresCoups) || (apresDegats > 0 && c.degats >= apresDegats)) { c.coups = 0; c.degats = 0; return true; }
-  return false;
+  if (!((apresCoups > 0 && c.coups >= apresCoups) || (apresDegats > 0 && c.degats >= apresDegats))) return;
+  c.coups = 0; c.degats = 0;
+  const coul = COUL_ELEMENT[el], txt = (t) => nombre(J.x + J.w / 2, J.y - 14, t, coul);
+  if (F.effet === "brulure") { J.brule = F.duree || 2.5; J.bruleDps = F.degatsParSec || 0; J.bruleCoul = coul; txt("BRÛLÉ"); }
+  else if (F.effet === "cumul") {
+    const P = J.poison = J.poison || { doses: 0, t: 0 };
+    P.doses = Math.min(F.cumulMax || 5, P.doses + 1); P.t = F.duree || 5; P.dps = F.degatsParSec || 0; P.coul = coul; txt("EMPOISONNÉ x" + P.doses);
+  }
+  else if (F.effet === "paralysie") { if (F.degatsBonus) perdrePV(F.degatsBonus); J.fige = Math.max(J.fige, F.dureeParalysie || 0.5); txt("PARALYSÉ"); }
+  else if (F.effet === "ralentir") { J.ralenti = F.duree || 2; J.ralentiForce = Math.max(0, Math.min(0.9, F.force || 0.5)); txt("RALENTI"); }
+  else if (F.effet === "volDeVie") { // l'ennemi se soigne avec les PV de Nexi
+    if (source && !source.mort) { const soin = Math.max(1, Math.round(dmg * (F.part || 0.15))); source.pv = Math.min(source.pvMax, source.pv + soin); nombre(source.x + source.w / 2, source.y - 8, "+" + soin, coul); }
+  }
+  else if (F.effet === "flaque") { poserFlaque(J.x + J.w / 2, F, coul, true); txt("LAVE !"); }
 }
 function perdrePV(n) { if (etat !== "jeu") return; J.pv -= n; if (J.pv <= 0) mourir(); }
 function mourir() {
@@ -1781,11 +1812,21 @@ function majJoueur(dt) {
   J.invul -= dt; J.cdL -= dt; J.cdH -= dt; J.lent -= dt; J.traverse -= dt; J.touche -= dt; J.tAnim += dt;
   const etaitInvisible = J.invisible > 0;
   J.fige -= dt; J.immobile -= dt; J.invisible -= dt;
-  if (J.brule > 0) { // brûlure : quelques PV toutes les 0,8 seconde (voir ETATS_NEXI)
-    J.brule -= dt; J.tBrule = (J.tBrule || 0) + dt;
-    if (Math.random() < 0.5) particule(J.x + rnd(0, J.w), J.y + rnd(5, 28), rnd(-10, 10), rnd(-40, -15), Math.random() < 0.5 ? "#ff8a3c" : "#ffd84d", 0.4);
-    if (J.tBrule >= 0.8) { J.tBrule = 0; perdrePV(ETATS_NEXI.BRULURE_PV); nombre(J.x + J.w / 2, J.y - 4, "-" + ETATS_NEXI.BRULURE_PV, "#ff8a3c"); }
+  // États subis (voir ETATS_NEXI) : brûlure et poison font perdre des PV toutes les 0,8 seconde
+  const P = J.poison;
+  if (J.brule > 0 || (P && P.t > 0)) {
+    J.tBrule = (J.tBrule || 0) + dt;
+    if (J.brule > 0 && Math.random() < 0.5) particule(J.x + rnd(0, J.w), J.y + rnd(5, 28), rnd(-10, 10), rnd(-40, -15), Math.random() < 0.5 ? (J.bruleCoul || "#ff8a3c") : "#ffd84d", 0.4);
+    if (P && P.t > 0 && Math.random() < 0.25) particule(J.x + rnd(0, J.w), J.y + rnd(5, 28), rnd(-6, 6), rnd(-25, -10), P.coul, 0.6);
+    if (J.tBrule >= 0.8) {
+      J.tBrule = 0;
+      J.dotReste = (J.dotReste || 0) + ((J.brule > 0 ? (J.bruleDps === undefined ? 2.5 : J.bruleDps) : 0) + (P && P.t > 0 ? (P.dps || 0) * P.doses : 0)) * 0.8;
+      const perte = Math.floor(J.dotReste);
+      if (perte > 0) { J.dotReste -= perte; perdrePV(perte); nombre(J.x + J.w / 2, J.y - 4, "-" + perte, J.brule > 0 ? (J.bruleCoul || "#ff8a3c") : P.coul); }
+    }
   }
+  J.brule -= dt; if (P) { P.t -= dt; if (P.t <= 0) P.doses = 0; }
+  if (J.ralenti > 0) { J.ralenti -= dt; if (Math.random() < 0.2) particule(J.x + rnd(0, J.w), J.y + rnd(0, 30), rnd(-5, 5), rnd(5, 15), "#9fe8ff", 0.5); }
   if (etaitInvisible && J.invisible <= 0 && synergie("e404")) explosionCorrompue(J.leurreX, SOL - 15, degatsArme(true) * 2); // le leurre explose
   if (aEffetArmure("bypass")) J.lent = 0;
   const fige = J.fige > 0, bloque = fige || J.immobile > 0;
@@ -1794,7 +1835,7 @@ function majJoueur(dt) {
   if (!J.accroupi && !bloque) { if (touches.gauche) dir--; if (touches.droite) dir++; }
   if (dir && !J.atk) J.dir = dir;
   const enCompetence = J.atk && J.atk.type === "competence";
-  J.vx = dir * JOUEUR.VITESSE * multEffets("vitesse") * multVitesseNexi() * (J.lent > 0 ? 0.55 : 1) * (enCompetence ? 0.2 : 1);
+  J.vx = dir * JOUEUR.VITESSE * multEffets("vitesse") * multVitesseNexi() * (J.lent > 0 ? 0.55 : 1) * (J.ralenti > 0 ? 1 - J.ralentiForce : 1) * (enCompetence ? 0.2 : 1);
   // Saut (accroupi + saut sur une plateforme = descendre à travers)
   if (appui.saut && J.auSol && !bloque && armeDef().effet !== "ddos") {
     if (gravSigne > 0 && touches.bas && J.y + J.h < SOL - 1) { J.traverse = 0.25; J.y += 2; J.auSol = false; }
@@ -4284,7 +4325,7 @@ function dessinerEnnemi(e, ox, oy) {
     else if (e.etat === "tir") { rect(sx + 5, sy + im.d.height, 5, SOL - oy - sy - im.d.height, "rgba(255,94,122,0.9)"); rect(sx + 7, sy + im.d.height, 1, SOL - oy - sy - im.d.height, "#ffffff"); }
   }
   if (e.element) { // halo de couleur sous un ennemi élémentaire
-    const c = e.element === "feu" ? "#ff8a3c" : "#2af5ff", cx = Math.round(e.x + e.w / 2 - ox), by = Math.round(e.y + e.h - oy);
+    const c = COUL_ELEMENT[e.element] || "#2af5ff", cx = Math.round(e.x + e.w / 2 - ox), by = Math.round(e.y + e.h - oy);
     for (let i = -e.w / 2 - 2; i <= e.w / 2 + 2; i++) if ((i + Math.floor(temps * 8)) % 3) px(cx + i, by, c);
     if (Math.floor(temps * 6 + e.t) % 2) { px(cx - e.w / 2 - 2, by - 3 - (Math.floor(temps * 9) % 6), c); px(cx + e.w / 2 + 2, by - 6 + (Math.floor(temps * 7) % 5), c); }
   }
