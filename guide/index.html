@@ -116,37 +116,40 @@
 
 <!-- ============================================================== -->
 <h2 id="atelier">1. L'atelier en 2 minutes</h2>
-<p>L'atelier est une page web avec le code du jeu à gauche et le jeu à droite.</p>
+<p>L'atelier est une page web avec le code du jeu à gauche et le jeu à droite (sur téléphone, tout s'empile : le jeu en haut, puis le code, puis les réglages). Le principe : tu changes une valeur dans le code, tu relances, et tu vois tout de suite le résultat. Tu ne peux rien casser pour de bon : le bouton <b>NOUVEAU VISITEUR</b> remet toujours le code d'origine.</p>
 <div class="tableau"><table>
   <tr><th>Bouton</th><th>Ce qu'il fait</th></tr>
   <tr><td><b>▶ LANCER</b> (ou Ctrl + Entrée)</td><td>Relance le jeu avec ton code. Si tu as fait une faute, un message rouge indique la ligne.</td></tr>
   <tr><td><b>Aller à…</b></td><td>Saute à une partie du code (chaque partie commence par un titre ★ ou ★★).</td></tr>
-  <tr><td><b>Liste des réglages</b> (sous le jeu)</td><td>Chaque réglage avec sa valeur actuelle et un lien « ligne N » : un clic sélectionne la valeur à changer.</td></tr>
+  <tr><td><b>Liste des réglages</b> (sous le jeu, ou sous le code sur téléphone)</td><td>Chaque réglage avec sa valeur actuelle et un lien « ligne N » : un clic sélectionne la valeur à changer.</td></tr>
   <tr><td><b>JOUER SUR MON TÉLÉPHONE</b></td><td>Affiche un QR code : scanne-le, tu joues à <i>ta</i> version et tu peux la garder (le lien contient tes modifications).</td></tr>
   <tr><td><b>TÉLÉCHARGER MON CODE</b></td><td>Enregistre ton fichier <code>nexi_infection_ma_version.html</code> : double-clic dessus pour jouer, ouvre-le dans un éditeur de texte pour continuer à coder chez toi.</td></tr>
   <tr><td><b>NOUVEAU VISITEUR</b></td><td>Efface toutes les modifications et revient au code d'origine.</td></tr>
 </table></div>
-<div class="encadre essaie"><b>ASTUCE</b><br>Clique une fois dans le jeu avant de jouer au clavier : flèches ou ZQSD pour bouger, Espace pour sauter, J pour attaquer, K pour la compétence, Échap ou P pour la pause.</div>
+<div class="encadre essaie"><b>ASTUCE</b><br>Après ▶ LANCER, le clavier pilote directement le jeu : flèches ou ZQSD pour bouger, Espace pour sauter, J pour attaquer, K pour la compétence, Échap ou P pour la pause. Pour retaper du code, clique dans l'éditeur ; pour rejouer, clique dans le jeu. Sur téléphone, touche l'écran du jeu.</div>
+<div class="encadre"><b>LA MÉTHODE QUI MARCHE</b><br>1. Change <b>une seule</b> valeur. 2. ▶ LANCER. 3. Regarde ce qui a changé. 4. Recommence. Si tu changes dix choses d'un coup et que ça plante, tu ne sauras pas laquelle est en cause.</div>
 
 <!-- ============================================================== -->
 <h2 id="bases">2. Les bases du code</h2>
-<p>Le jeu est écrit en <b>JavaScript</b>, le langage des pages web. Pas besoin de tout comprendre pour le modifier : voici les 8 choses que tu vas croiser partout, avec de vrais exemples tirés du jeu.</p>
+<p>Le jeu est écrit en <b>JavaScript</b>, le langage des pages web. Un programme, c'est une suite d'instructions que l'ordinateur lit dans l'ordre, de haut en bas, sans jamais deviner ce que tu voulais dire : une virgule oubliée, et il s'arrête. Bonne nouvelle : pas besoin de tout comprendre pour modifier le jeu. Voici les 9 choses que tu vas croiser partout, avec de vrais exemples tirés du jeu.</p>
 
 <h3>Le commentaire : du texte pour les humains</h3>
 <pre><span class="c">// Points de vie. Essaie 999 pour un Nexi quasi invincible.</span></pre>
-<p>Tout ce qui suit <code>//</code> sur une ligne est ignoré par l'ordinateur. Ce sont des notes pour toi. Les gros blocs entre <code>/*</code> et <code>*/</code> aussi.</p>
+<p>Tout ce qui suit <code>//</code> sur une ligne est ignoré par l'ordinateur. Ce sont des notes laissées pour toi : dans ce jeu, elles expliquent presque chaque réglage et proposent des valeurs à essayer. Les gros blocs entre <code>/*</code> et <code>*/</code> sont aussi des commentaires, sur plusieurs lignes.</p>
 
-<h3>La constante : un nom qui retient une valeur</h3>
+<h3>La constante : une boîte avec une étiquette</h3>
 <pre><span class="k">const</span> MESSAGE_KO = <span class="t">"SYSTEM FAILURE"</span>;</pre>
-<p><code>const</code> crée une boîte nommée <code>MESSAGE_KO</code> qui contient le texte <code>"SYSTEM FAILURE"</code>. Partout où le jeu écrit <code>MESSAGE_KO</code>, il utilise ce texte. Le <code>;</code> termine l'instruction.</p>
+<p>Imagine une boîte avec une étiquette collée dessus. <code>const</code> fabrique la boîte, <code>MESSAGE_KO</code> est l'étiquette, et le signe <code>=</code> range le texte <code>"SYSTEM FAILURE"</code> dedans. Ensuite, partout où le jeu écrit <code>MESSAGE_KO</code>, il va chercher ce qu'il y a dans la boîte. Change le contenu à un seul endroit, et tout le jeu suit. Le <code>;</code> termine l'instruction, comme un point à la fin d'une phrase.</p>
+<p>Tu croiseras aussi <code>let</code> : c'est pareil, mais le contenu de la boîte peut changer pendant la partie (les PV de Nexi, la salle en cours…). Une <code>const</code>, elle, ne bouge plus une fois le jeu lancé : c'est pour ça que les réglages en sont.</p>
 
 <h3>Les 3 types de valeurs que tu vas changer</h3>
 <div class="tableau"><table>
   <tr><th>Type</th><th>Exemple</th><th>Règle</th></tr>
-  <tr><td><b>Nombre</b></td><td><code>100</code>, <code>0.22</code>, <code>-5</code></td><td>Sans guillemets. La virgule décimale s'écrit avec un <b>point</b> : <code>0.22</code>, pas <code>0,22</code>.</td></tr>
-  <tr><td><b>Texte</b> (chaîne)</td><td><code>"Cheval de Troie"</code></td><td>Toujours entre guillemets <code>" "</code>, au début <i>et</i> à la fin.</td></tr>
-  <tr><td><b>Booléen</b></td><td><code>true</code> / <code>false</code></td><td>Vrai ou faux, sans guillemets. Sert d'interrupteur.</td></tr>
+  <tr><td><b>Nombre</b></td><td><code>150</code>, <code>0.22</code>, <code>-5</code></td><td>Sans guillemets. La virgule décimale s'écrit avec un <b>point</b> : <code>0.22</code>, pas <code>0,22</code> (la virgule sépare déjà les éléments d'une liste).</td></tr>
+  <tr><td><b>Texte</b> (on dit « chaîne »)</td><td><code>"Cheval de Troie"</code></td><td>Toujours entre guillemets <code>" "</code>, au début <i>et</i> à la fin. Sans eux, l'ordinateur croit que c'est le nom d'une boîte et cherche une étiquette qui n'existe pas.</td></tr>
+  <tr><td><b>Booléen</b></td><td><code>true</code> / <code>false</code></td><td>Vrai ou faux, sans guillemets. C'est un interrupteur : allumé ou éteint.</td></tr>
 </table></div>
+<div class="encadre attention"><b>PIÈGE CLASSIQUE</b><br><code>"150"</code> (avec guillemets) n'est pas un nombre mais un texte qui contient les caractères 1, 5 et 0. Le jeu ne pourra pas faire de calcul avec. Un nombre s'écrit toujours sans guillemets.</div>
 
 <h3>L'objet : une fiche avec des cases nommées</h3>
 <pre><span class="k">const</span> JOUEUR = {
@@ -154,30 +157,68 @@
   VITESSE: <span class="v">72</span>,          <span class="c">// Vitesse de déplacement</span>
   ONE_SHOT: <span class="v">false</span>,      <span class="c">// true = chaque coup tue l'ennemi</span>
 };</pre>
-<p>Entre <code>{</code> et <code>}</code>, chaque ligne est un couple <code>nom: valeur,</code>. Le jeu lit la valeur avec un point : <code>JOUEUR.PV_MAX</code> vaut <code>150</code>. <b>La virgule à la fin de chaque ligne est obligatoire</b> (sauf parfois la dernière).</p>
+<p>Un objet, c'est comme une fiche d'identité : plusieurs cases, chacune avec un nom et une valeur. Entre <code>{</code> et <code>}</code>, chaque ligne est un couple <code>nom: valeur,</code>. Pour lire une case, le jeu met un point entre le nom de la fiche et celui de la case : <code>JOUEUR.PV_MAX</code> vaut <code>150</code>.</p>
+<p><b>La virgule à la fin de chaque ligne est obligatoire</b> : elle sépare une case de la suivante. Après la toute dernière case, elle est permise mais pas nécessaire. Les deux-points <code>:</code> séparent le nom de la valeur ; ne les remplace pas par <code>=</code>.</p>
 
 <h3>Le tableau : une liste rangée</h3>
 <pre>PETITS: [<span class="t">"ver"</span>, <span class="t">"glitch"</span>, <span class="t">"spyware"</span>, <span class="t">"script"</span>, <span class="t">"drone"</span>],</pre>
-<p>Entre <code>[</code> et <code>]</code>, des valeurs séparées par des virgules. Ici, la liste des petits ennemis qui peuvent apparaître. Retire <code>"drone"</code> et il n'y aura plus de drones.</p>
+<p>Entre <code>[</code> et <code>]</code>, des valeurs séparées par des virgules, dans un ordre précis. Ici, la liste des petits ennemis qui peuvent apparaître dans les salles. Retire <code>"drone"</code> (avec sa virgule) et il n'y aura plus de drones ; garde un seul nom et toutes les salles n'auront que cet ennemi.</p>
+<div class="encadre attention"><b>AJOUTER UN NOM NE SUFFIT PAS</b><br>Écrire <code>"dragon"</code> dans cette liste ne fait pas apparaître de dragon : le jeu ne sait pas encore à quoi il ressemble, combien de PV il a, ni comment il bouge. Il faut d'abord <b>créer</b> le monstre dans le <code>BESTIAIRE</code> (sa fiche : nom, PV, dégâts, vitesse), lui donner un comportement et un dessin (le plus simple : copier un monstre existant avec <code>comme: "ver"</code>), et <b>ensuite</b> ajouter son nom ici. Tout est expliqué pas à pas dans la <a href="#pasapas">recette B, section 9</a>. Si le nom n'existe pas dans le bestiaire, le jeu l'ignore.</div>
 
 <h3>La fonction : une recette que le jeu peut suivre</h3>
 <pre><span class="k">function</span> px(x, y, c) { g.fillStyle = c; g.fillRect(x | <span class="v">0</span>, y | <span class="v">0</span>, <span class="v">1</span>, <span class="v">1</span>); }</pre>
-<p><code>px</code> dessine <b>un pixel</b> de couleur <code>c</code> à la position <code>x</code>, <code>y</code> (<code>x | 0</code> arrondit à un nombre entier). Le jeu appelle <code>px(10, 20, "#ffffff")</code> pour poser un pixel blanc. Tout le jeu est fait de fonctions comme celle-ci, qui s'appellent entre elles.</p>
-
-<h3>La condition : « si… alors… »</h3>
-<pre><span class="k">if</span> (J.pv &lt;= <span class="v">0</span>) mourir();</pre>
-<p>« Si les PV de Nexi (<code>J.pv</code>) sont inférieurs ou égaux à 0, alors appeler la fonction <code>mourir</code> ». Les comparaisons : <code>===</code> égal, <code>!==</code> différent, <code>&lt;</code> plus petit, <code>&gt;</code> plus grand.</p>
+<p>Une fonction, c'est une recette qu'on écrit une fois et qu'on réutilise autant qu'on veut. Celle-ci s'appelle <code>px</code> et sert à dessiner <b>un seul pixel</b>. Lisons-la morceau par morceau :</p>
+<div class="tableau"><table>
+  <tr><th>Morceau</th><th>Ce qu'il veut dire</th></tr>
+  <tr><td><code>function px</code></td><td>« Voici une recette qui s'appelle <code>px</code>. »</td></tr>
+  <tr><td><code>(x, y, c)</code></td><td>Les <b>ingrédients</b> (on dit « paramètres ») : la position <code>x</code>, la position <code>y</code> et la couleur <code>c</code>. On les donne à chaque utilisation.</td></tr>
+  <tr><td><code>{ … }</code></td><td>Les étapes de la recette, entre accolades.</td></tr>
+  <tr><td><code>g</code></td><td>La feuille de dessin du jeu (l'écran).</td></tr>
+  <tr><td><code>g.fillStyle = c</code></td><td>« Prends le feutre de la couleur <code>c</code>. »</td></tr>
+  <tr><td><code>g.fillRect(x, y, 1, 1)</code></td><td>« Colorie un rectangle de 1 pixel de large et 1 pixel de haut à la position <code>x</code>, <code>y</code>. » Donc un seul pixel.</td></tr>
+  <tr><td><code>x | 0</code></td><td>Arrondit <code>x</code> à un nombre entier : on ne peut pas colorier la moitié d'un pixel.</td></tr>
+</table></div>
+<p>Pour s'en servir, on <b>appelle</b> la fonction avec de vrais ingrédients : <code>px(10, 20, "#ffffff")</code> pose un pixel blanc à 10 pixels du bord gauche et 20 pixels du haut.</p>
+<p><b>Où est le point (0, 0) ?</b> En haut à gauche de l'écran. <code>x</code> augmente vers la droite, et <code>y</code> augmente vers le <b>bas</b> (c'est l'inverse des maths au collège) :</p>
+<div class="schema">(0,0) ──────────► x augmente vers la droite
+  │
+  │      • px(10, 20, …)  = 10 vers la droite, 20 vers le bas
+  │
+  ▼
+  y augmente vers le bas</div>
+<p>Sa grande sœur, <code>rect(x, y, largeur, hauteur, couleur)</code>, colorie un rectangle entier d'un coup. C'est elle qui dessine presque tout le décor : le sol, les murs, les plateformes. Par exemple, <code>rect(x, y, w, 1, C.solClair)</code> trace le liseré clair en haut d'une plateforme : toute sa largeur <code>w</code>, sur 1 pixel de haut.</p>
 
 <h3>Les couleurs : le code hexadécimal</h3>
 <pre>P:<span class="t">"#7b3fe0"</span></pre>
-<p>Une couleur s'écrit <code>#</code> suivi de 6 caractères : 2 pour le <b>rouge</b>, 2 pour le <b>vert</b>, 2 pour le <b>bleu</b>, de <code>00</code> (rien) à <code>ff</code> (maximum). <code>#ff0000</code> = rouge pur, <code>#000000</code> = noir, <code>#ffffff</code> = blanc. Ici <code>7b</code> de rouge, <code>3f</code> de vert, <code>e0</code> de bleu : le violet de Nexi.</p>
+<p>Les fonctions de dessin ont besoin d'une couleur. Sur un écran, chaque couleur est un mélange de trois lumières : <b>rouge</b>, <b>vert</b> et <b>bleu</b>. Une couleur s'écrit donc <code>#</code> suivi de 6 caractères : 2 pour le rouge, 2 pour le vert, 2 pour le bleu.</p>
+<p><b>Pourquoi des lettres ?</b> Ces nombres sont écrits en <b>hexadécimal</b> (base 16). On compte avec 16 chiffres au lieu de 10 : après <code>9</code> viennent <code>a</code> (10), <code>b</code> (11), <code>c</code> (12), <code>d</code> (13), <code>e</code> (14) et <code>f</code> (15).</p>
+<p><b>Pourquoi <code>ff</code> est le maximum ?</b> Avec 2 chiffres de 16 possibilités, on a 16 × 16 = <b>256</b> valeurs, de <code>00</code> à <code>ff</code>. Le premier chiffre compte les « seizaines », le second les unités : <code>ff</code> = 15 × 16 + 15 = <b>255</b>, la plus grande valeur qui tient sur 2 chiffres. C'est aussi la plus grande valeur que l'ordinateur range dans un <b>octet</b> (8 bits), d'où ce choix. Autre exemple : <code>7b</code> = 7 × 16 + 11 = 123.</p>
+<div class="tableau"><table>
+  <tr><th>Code</th><th>Rouge, vert, bleu</th><th>Résultat</th></tr>
+  <tr><td><code>#000000</code></td><td>rien, rien, rien</td><td>noir (aucune lumière)</td></tr>
+  <tr><td><code>#ffffff</code></td><td>tout à fond</td><td>blanc</td></tr>
+  <tr><td><code>#ff0000</code></td><td>rouge à fond, pas de vert ni de bleu</td><td>rouge pur</td></tr>
+  <tr><td><code>#ff00ff</code></td><td>rouge et bleu à fond</td><td>magenta</td></tr>
+  <tr><td><code>#808080</code></td><td>les trois à moitié (128)</td><td>gris</td></tr>
+  <tr><td><code>#7b3fe0</code></td><td>123 de rouge, 63 de vert, 224 de bleu</td><td>le violet de Nexi (beaucoup de bleu, un peu de rouge)</td></tr>
+</table></div>
+<div class="encadre essaie"><b>ASTUCES</b><br>Pour <b>éclaircir</b> une couleur, monte les trois paires ; pour l'<b>assombrir</b>, baisse-les. Pour trouver un code sans calculer, tape « color picker » dans un moteur de recherche : une palette s'affiche avec le code à copier. Majuscules ou minuscules, c'est pareil : <code>#FF5E7A</code> = <code>#ff5e7a</code>. Et n'oublie jamais le <code>#</code> ni les guillemets.</div>
+
+<h3>La condition : « si… alors… »</h3>
+<pre><span class="k">if</span> (J.pv &lt;= <span class="v">0</span>) mourir();</pre>
+<p>« <b>Si</b> les PV de Nexi (<code>J.pv</code>) sont inférieurs ou égaux à 0, <b>alors</b> appeler la fonction <code>mourir</code>. » Le jeu pose ce genre de question des milliers de fois par seconde. Le test est entre parenthèses ; s'il est faux, la suite est sautée. On peut ajouter <code>else</code> (« sinon ») pour faire autre chose quand le test est faux.</p>
+<p>Les comparaisons : <code>===</code> égal, <code>!==</code> différent, <code>&lt;</code> plus petit, <code>&gt;</code> plus grand, <code>&lt;=</code> et <code>&gt;=</code> pour « ou égal ». Attention : un seul <code>=</code> <b>range</b> une valeur dans une boîte, trois <code>===</code> <b>comparent</b>.</p>
+
+<h3>La boucle : répéter sans tout réécrire</h3>
+<pre><span class="k">for</span> (<span class="k">let</span> xx = x + <span class="v">5</span>; xx &lt; x + w; xx += <span class="v">10</span>) rect(xx, y + <span class="v">1</span>, <span class="v">1</span>, <span class="v">4</span>, C.pierreJoint);</pre>
+<p>Cette ligne dessine les joints d'une plateforme. Elle se lit en trois temps : <b>départ</b> (<code>xx</code> commence 5 pixels après le bord gauche), <b>condition</b> (on continue tant que <code>xx</code> est avant le bord droit), <b>pas</b> (<code>xx += 10</code> : on avance de 10 pixels à chaque tour). À chaque tour, <code>rect</code> trace un joint de 1 pixel de large et 4 de haut. Résultat : un joint tous les 10 pixels, quelle que soit la largeur de la plateforme. Remplace <code>10</code> par <code>5</code> et les joints sont deux fois plus serrés.</p>
 
 <!-- ============================================================== -->
 <h2 id="missions">3. Les missions de l'atelier</h2>
 <p>Cinq défis pour découvrir le code pas à pas. Chacun prend 2 à 5 minutes. Après chaque modification : <b>▶ LANCER</b>.</p>
 
 <div class="mission"><h3>Mission 1 — Nexi surpuissant (un nombre)</h3>
-<p>Change les points de vie de 100 à 999, puis la hauteur du saut de 215 à 350.</p>
+<p>Change les points de vie de 150 à 999, puis la hauteur du saut de 215 à 350.</p>
 <pre>PV_MAX: <span class="v">999</span>,
 FORCE_SAUT: <span class="v">350</span>,</pre>
 <p><b>Ce que tu dois voir :</b> la barre de vie affiche 999, et Nexi saute très haut.<br><b>Tu as appris :</b> un nombre dans un objet, et la virgule qui termine la ligne.</p>
@@ -196,7 +237,7 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
 
 <div class="mission"><h3>Mission 4 — Repeins Nexi (une couleur)</h3>
 <pre><span class="k">const</span> PAL_NEXI = { K:<span class="t">"#14082c"</span>, P:<span class="t">"#e03f3f"</span>, L:<span class="t">"#ff7b7b"</span>, d:<span class="t">"#a81f1f"</span>, …</pre>
-<p><code>P</code> est le violet principal du corps, <code>L</code> sa version claire, <code>d</code> sa version sombre. Change les trois avec la même teinte, plus claire et plus sombre : Nexi devient rouge (ou la couleur de ton choix).<br><b>Tu as appris :</b> les couleurs hexadécimales, et qu'une lettre du dessin correspond à une couleur de la palette.</p>
+<p><code>P</code> est le violet principal du corps, <code>L</code> sa version claire, <code>d</code> sa version sombre. Change les trois avec la même teinte, plus claire et plus sombre : Nexi devient rouge (ou la couleur de ton choix).<br><b>Tu as appris :</b> les couleurs hexadécimales (expliquées en section 2), et qu'une lettre du dessin correspond à une couleur de la palette (section 7).</p>
 <a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#P">Ouvrir la couleur de Nexi</a></div>
 
 <div class="mission"><h3>Mission 5 (bonus) — Crée ton propre bonus de porte (une liste d'objets)</h3>
@@ -214,7 +255,8 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
 
 <!-- ============================================================== -->
 <h2 id="carte">4. La carte du fichier</h2>
-<p>Le fichier fait environ 4 500 lignes, rangées du plus simple au plus technique. Les titres en <code>★ DÉBUTANT</code> et <code>★★ CODEUR</code> servent de panneaux indicateurs (menu « Aller à… » de l'atelier).</p>
+<p>Le fichier fait environ 4 700 lignes. Pas de panique : elles sont rangées comme un livre, du plus simple au plus technique, et tu n'as besoin que du début. Les titres en <code>★ DÉBUTANT</code> et <code>★★ CODEUR</code> servent de panneaux indicateurs : le menu « Aller à… » de l'atelier saute directement à chacun.</p>
+<p><b>Pour trouver quelque chose</b>, clique dans le code et fais <b>Ctrl + F</b> (ou Cmd + F sur Mac), puis tape un mot : <code>PV_MAX</code>, <code>BESTIAIRE</code>, <code>couleur</code>… Les numéros de ligne à gauche servent de repères, comme les pages d'un livre.</p>
 <div class="carte">
   <div class="zone debutant"><b>★ DÉBUTANT (début du fichier)</b>Les réglages simples : vie, vitesse, compétence, monstres, noms des boss, histoire, progression. Que des nombres, des textes et des true/false.</div>
   <div class="zone"><b>★★ CODEUR — LES DONNÉES</b>Les listes du jeu : portes, butin, bestiaire, salles, boss, virus, armes, armures, poids, musique, bruitages, pièges, monde.</div>
@@ -368,7 +410,17 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
 <h3>Les palettes et les sprites en lettres</h3>
 <pre><span class="k">const</span> PAL_ZOMBIE = { L:<span class="t">"#e4dcff"</span>, l:<span class="t">"#a796e0"</span>, d:<span class="t">"#6a58a8"</span>, D:<span class="t">"#0c0716"</span>, E:<span class="t">"#FF5E7A"</span>, … };
 <span class="k">const</span> ZOMBIE = [<span class="t">".........LLLL........."</span>, <span class="t">".......LLllllLL......."</span>, …</pre>
-<p>Les petits ennemis sont dessinés en <b>texte</b> : chaque chaîne est une ligne de pixels, chaque lettre une couleur de la palette, le point <code>.</code> un pixel transparent. Change <code>E:"#FF5E7A"</code> (les yeux du zombie) en <code>"#3DF5C4"</code> et ses yeux deviennent verts. Un contour sombre est ajouté automatiquement.</p>
+<p>Les petits ennemis sont dessinés en <b>texte</b>, comme sur du papier quadrillé. Deux morceaux travaillent ensemble :</p>
+<ul>
+  <li>la <b>palette</b> (<code>PAL_ZOMBIE</code>) est un objet qui associe une lettre à une couleur : <code>E</code> = <code>"#FF5E7A"</code>, le rose des yeux ;</li>
+  <li>le <b>dessin</b> (<code>ZOMBIE</code>) est un tableau de chaînes : chaque chaîne est une ligne de pixels, de haut en bas, et chaque caractère est un pixel, de gauche à droite. Le point <code>.</code> veut dire « transparent ».</li>
+</ul>
+<p>Au démarrage, la fonction <code>grilleVersCanvas</code> parcourt le dessin case par case avec deux boucles : pour chaque ligne <code>y</code>, pour chaque caractère <code>x</code>, elle cherche la lettre dans la palette et colorie ce pixel avec la bonne couleur (exactement comme <code>px</code> en section 2). Un exemple minuscule, une croix de 3 pixels sur 3 :</p>
+<pre><span class="k">const</span> PAL = { R:<span class="t">"#ff0000"</span> };
+<span class="k">const</span> CROIX = [<span class="t">".R."</span>,
+               <span class="t">"RRR"</span>,
+               <span class="t">".R."</span>];   <span class="c">// une croix rouge : le centre et ses 4 voisins</span></pre>
+<p>Change <code>E:"#FF5E7A"</code> dans <code>PAL_ZOMBIE</code> en <code>"#3DF5C4"</code> et tous les pixels <code>E</code>, les yeux du zombie, deviennent verts. Un contour sombre est ajouté automatiquement autour du dessin. Pour créer un monstre avec ton propre dessin, voir la recette B (niveau 2), section 9.</p>
 
 <h3>Les boss : des formes géométriques</h3>
 <p>Les boss sont trop grands pour être dessinés lettre par lettre : ils sont construits avec des formes (<code>rect</code>, <code>ellipse</code>, <code>capsule</code>, <code>poly</code>) et des matériaux à 3 tons. La fonction <code>rendreFormes</code> transforme ces formes en pixels, avec ombres et contour automatiques. Les tailles de chaque boss sont dans <code>TAILLES_BOSS</code>.</p>
