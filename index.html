@@ -66,11 +66,14 @@ const COMPETENCE = {
 // ==================================================================
 // ★ DÉBUTANT — ÉLÉMENT DES ATTAQUES
 // ==================================================================
-// Choisis entre : "aucun", "feu", "poison" ou "foudre"
-//   "feu"    → brûlure : dégâts continus pendant quelques secondes
-//   "poison" → se cumule à chaque coup (les Spectres y sont immunisés !)
-//   "foudre" → remplit une jauge ; quand elle est pleine, l'ennemi est paralysé
-// Astuce : avec "feu" ou "foudre", l'attaque légère blesse aussi les Spectres.
+// Choisis entre : "aucun", "feu", "poison", "foudre", "glace" ou "vampire"
+//   "feu"     → brûlure : dégâts continus pendant quelques secondes
+//   "poison"  → se cumule à chaque coup (les Spectres y sont immunisés !)
+//   "foudre"  → remplit une jauge ; quand elle est pleine, l'ennemi est paralysé
+//   "glace"   → ralentit l'ennemi touché
+//   "vampire" → chaque coup rend un peu de vie à Nexi
+// Astuce : avec "feu", "foudre" ou "glace", l'attaque légère blesse aussi les Spectres.
+// Tu veux inventer ton propre élément ? Va dans « ★★ CODEUR — LES ÉLÉMENTS ».
 const ELEMENT = "aucun";
 
 
@@ -85,16 +88,6 @@ const MONSTRES = {
   ENNEMIS_MAX: 9,        // Nombre maximum d'ennemis par salle.
   CHANCE_ELEMENTAIRE: 0.15, // Chance qu'un ennemi soit « de feu » ou « de foudre » (à partir de la salle 3).
 };
-
-
-// ==================================================================
-// ★ DÉBUTANT — MODE DÉMO (pour le stand)
-// ==================================================================
-// true = à chaque porte, tu choisis la prochaine salle parmi les 10 suivantes
-// (pratique pour aller voir directement un boss ou le Tyran).
-// false = le jeu normal : on descend salle par salle.
-const MODE_DEMO = false;
-const VERSION = "V0.9.5 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
 
 
 // ==================================================================
@@ -139,11 +132,11 @@ const PROGRESSION_NEXI = {
   XP_EN_PLUS_PAR_NIVEAU: 12,     // chaque niveau suivant demande un peu plus d'XP
   FRAGMENTS_GARDES_A_LA_MORT: 0.25, // part des fragments de code conservée quand Nexi meurt (0.25 = 25 %)
   TAILLE_SAC: 6,                 // nombre d'objets que Nexi peut porter en plus de son équipement
-  TAILLE_COFFRE: 12,
+  TAILLE_COFFRE: 12,             // nombre d'objets dans le coffre de dépôt du Terminal
   SOIN_FRAGMENTS_PAR_PV: 0.4,    // à la porte : prix d'un PV soigné en fragments (augmente avec la profondeur)
   COUT_AMELIORATION: 25,         // fragments pour passer une arme ou une armure du niveau 1 au niveau 2
   HAUSSE_COUT: 1.6,              // chaque amélioration suivante coûte 1,6 fois plus (25, 40, 64, 102, 164…)
-  CHARGE_DE_BASE: 30,            // poids d'équipement que Nexi porte sans effort au niveau 1             // nombre d'objets dans le coffre de dépôt du Terminal
+  CHARGE_DE_BASE: 30,            // poids d'équipement que Nexi porte sans effort au niveau 1
   SAUVEGARDE_AUTO: true,         // false = rien n'est gardé dans le téléphone (la partie repart de zéro)
 };
 // Ce que rapporte 1 point de niveau
@@ -160,12 +153,27 @@ const SOUS_TITRE_KO = "Nexi a été corrompu.";
 
 
 // ==================================================================
-// ★★ CODEUR — EFFETS DES ÉLÉMENTS
+// ★★ CODEUR — LES ÉLÉMENTS
 // ==================================================================
+// Une ligne = un élément. Pour en créer un : copie une ligne, change son
+// nom (avant les deux-points), choisis son « effet » et sa couleur, puis
+// écris ce nom dans  const ELEMENT = "...";  tout en haut du fichier.
+//
+// Les 5 effets que le moteur sait faire, et leurs réglages :
+//   "brulure"   → degatsParSec, duree         (dégâts continus)
+//   "cumul"     → degatsParSec, duree, cumulMax (chaque coup ajoute une dose)
+//   "paralysie" → coupsPourParalyser, dureeParalysie, degatsBonus
+//   "ralentir"  → force (0.5 = moitié moins vite, max 0.9), duree
+//   "volDeVie"  → part (0.15 = Nexi récupère 15 % des dégâts infligés)
+// couleur  = couleur de l'élément à l'écran (code hexadécimal)
+// magique  = true → l'attaque légère blesse aussi les Spectres
+// spectresImmunises = true → les Spectres ignorent cet élément
 const EFFETS_ELEMENTS = {
-  feu:    { degatsParSec: 6,   duree: 3 },                       // brûlure
-  poison: { degatsParSec: 2.5, duree: 5, cumulMax: 5 },          // par dose cumulée
-  foudre: { coupsPourParalyser: 3, dureeParalysie: 1.5, degatsBonus: 3 },
+  feu:     { effet: "brulure",   couleur: "#ff8a3c", magique: true, degatsParSec: 6, duree: 3 },
+  poison:  { effet: "cumul",     couleur: "#8CFF3A", spectresImmunises: true, degatsParSec: 2.5, duree: 5, cumulMax: 5 },
+  foudre:  { effet: "paralysie", couleur: "#FFE14D", magique: true, coupsPourParalyser: 3, dureeParalysie: 1.5, degatsBonus: 3 },
+  glace:   { effet: "ralentir",  couleur: "#9fe8ff", magique: true, force: 0.5, duree: 3 },
+  vampire: { effet: "volDeVie",  couleur: "#c9b0ff", part: 0.15 },
 };
 
 
@@ -843,8 +851,12 @@ function choixPondere(liste) {
   for (const o of liste) { r -= o.poids; if (r <= 0) return o; }
   return liste[liste.length - 1];
 }
-const ELEMENT_ACTIF = ["feu", "poison", "foudre"].includes(ELEMENT) ? ELEMENT : "aucun";
-const COUL_ELEMENT = { feu: "#ff8a3c", poison: "#8CFF3A", foudre: "#FFE14D", aucun: "#3DF5C4" };
+// l'élément choisi en haut du fichier, s'il existe bien dans EFFETS_ELEMENTS
+const ELEMENT_ACTIF = EFFETS_ELEMENTS[ELEMENT] && EFFETS_ELEMENTS[ELEMENT].effet ? ELEMENT : "aucun";
+if (ELEMENT !== ELEMENT_ACTIF) console.warn("Élément inconnu : " + ELEMENT + " (vérifie son nom dans EFFETS_ELEMENTS)");
+const COUL_ELEMENT = { aucun: "#3DF5C4" };
+for (const nom in EFFETS_ELEMENTS) COUL_ELEMENT[nom] = EFFETS_ELEMENTS[nom].couleur || "#ffffff";
+const elementMagique = el => !!(EFFETS_ELEMENTS[el] && EFFETS_ELEMENTS[el].magique);
 
 // ---------- État du jeu ----------
 let cv, ctx, bas, g;
@@ -1403,12 +1415,13 @@ function lancerOnde(mode) {
     if (e.mort || e.dormant > 0) continue;
     const d = Math.hypot(e.x + e.w / 2 - cx, e.y + e.h / 2 - cy);
     if (d > R + Math.max(e.w, e.h) / 2) continue;
-    vole += infligerDegats(e, D * degatsMultJoueur(), true, false, "competence");
+    const inflige = infligerDegats(e, D * degatsMultJoueur(), true, false, "competence");
+    vole += inflige;
     if (e.mort) { // synergie Nécromancie : l'ennemi drainé se relève pour Nexi
       if (drain && synergie("zombie") && !e.boss) allies.push({ type: "mini", x: e.x + e.w / 2, y: SOL - 9, w: 7, h: 9, vie: 8, cd: 0.3, dir: J.dir, delai: 0.2 });
       continue;
     }
-    appliquerElement(e);
+    appliquerElement(e, inflige);
     if (e.spectre) { e.materialise = e.boss ? 1.5 : 3; nombre(e.x + e.w / 2, e.y - 14, "MATÉRIALISÉ", C.menthe); } // l'onde rend les Spectres tangibles
     e.paralyse = Math.max(e.paralyse, e.boss ? 0.3 : drain ? 0.4 : COMPETENCE.ETOURDISSEMENT);
     if (!e.boss && e.type !== "parasite") e.x += Math.sign(e.x + e.w / 2 - cx || J.dir) * COMPETENCE.RECUL;
@@ -1416,19 +1429,30 @@ function lancerOnde(mode) {
   if (drain && vole > 0) { const soin = Math.round(vole * 0.4); J.pv = Math.min(J.pvMax, J.pv + soin); nombre(cx, J.y - 8, "+" + soin + " PV", "#c9b0ff"); }
 }
 
-function appliquerElement(e) {
-  if (e.mort) return;
-  if (ELEMENT_ACTIF === "feu") e.brulure = EFFETS_ELEMENTS.feu.duree;
-  else if (ELEMENT_ACTIF === "poison") {
-    if (e.spectre) { immunise(e); return; }
-    e.poison.doses = Math.min(EFFETS_ELEMENTS.poison.cumulMax, e.poison.doses + 1);
-    e.poison.t = EFFETS_ELEMENTS.poison.duree;
-  } else if (ELEMENT_ACTIF === "foudre") {
-    const F = EFFETS_ELEMENTS.foudre;
-    infligerDegats(e, F.degatsBonus, false, true);
+function appliquerElement(e, dmg) { appliquerElementType(e, ELEMENT_ACTIF, dmg); }
+
+// Applique l'effet d'un élément (voir EFFETS_ELEMENTS) à un ennemi touché
+function appliquerElementType(e, el, dmg = 0) {
+  const F = EFFETS_ELEMENTS[el];
+  if (!F || e.mort) return;
+  if (e.element && e.element === el) return;   // un ennemi de feu ne brûle pas, un ennemi de foudre ne se paralyse pas
+  if (e.spectre && F.spectresImmunises && !(e.materialise > 0)) { immunise(e); return; }
+  const coul = COUL_ELEMENT[el];
+  if (F.effet === "brulure") {
+    e.brulure = F.duree || 3; e.brulureDps = F.degatsParSec || 0; e.brulureCoul = coul;
+  } else if (F.effet === "cumul") {
+    e.poison.doses = Math.min(F.cumulMax || 5, e.poison.doses + 1);
+    e.poison.t = F.duree || 5; e.poison.dps = F.degatsParSec || 0; e.poison.coul = coul;
+  } else if (F.effet === "paralysie") {
+    if (F.degatsBonus) infligerDegats(e, F.degatsBonus, false, true);
     if (e.mort) return;
-    e.jauge++;
-    if (e.jauge >= F.coupsPourParalyser) { e.jauge = 0; e.paralyse = e.boss ? 0.6 : F.dureeParalysie; nombre(e.x + e.w / 2, e.y - 10, "PARALYSÉ", "#FFE14D"); }
+    e.jauge++; e.jaugeMax = F.coupsPourParalyser || 3; e.jaugeCoul = coul;
+    if (e.jauge >= e.jaugeMax) { e.jauge = 0; e.paralyse = e.boss ? 0.6 : (F.dureeParalysie || 1); nombre(e.x + e.w / 2, e.y - 10, "PARALYSÉ", coul); }
+  } else if (F.effet === "ralentir") {
+    e.ralenti = F.duree || 3; e.ralentiForce = Math.max(0, Math.min(0.9, F.force || 0.5)); e.ralentiCoul = coul;
+  } else if (F.effet === "volDeVie") {
+    J.vol = (J.vol || 0) + dmg * (F.part || 0);
+    if (J.vol >= 1) { const soin = Math.floor(J.vol); J.vol -= soin; J.pv = Math.min(J.pvMax, J.pv + soin); nombre(J.x + J.w / 2, J.y - 8, "+" + soin, coul); }
   }
 }
 
@@ -1495,16 +1519,21 @@ function majEnnemi(e, dt) {
     if (e.tickDot <= 0) {
       e.tickDot = 0.5;
       let d = 0;
-      if (e.brulure > 0) d += EFFETS_ELEMENTS.feu.degatsParSec * 0.5;
-      if (e.poison.t > 0) d += EFFETS_ELEMENTS.poison.degatsParSec * e.poison.doses * 0.5;
+      if (e.brulure > 0) d += (e.brulureDps || 0) * 0.5;
+      if (e.poison.t > 0) d += (e.poison.dps || 0) * e.poison.doses * 0.5;
       if (d > 0) infligerDegats(e, d, false, true);
     }
-    if (e.brulure > 0 && Math.random() < 0.4) particule(e.x + rnd(0, e.w), e.y + e.h, rnd(-8, 8), rnd(-45, -20), COUL_ELEMENT.feu, 0.5);
-    if (e.poison.t > 0 && Math.random() < 0.25) particule(e.x + rnd(0, e.w), e.y + e.h / 2, rnd(-6, 6), rnd(-25, -10), COUL_ELEMENT.poison, 0.6);
+    if (e.brulure > 0 && Math.random() < 0.4) particule(e.x + rnd(0, e.w), e.y + e.h, rnd(-8, 8), rnd(-45, -20), e.brulureCoul || COUL_ELEMENT.aucun, 0.5);
+    if (e.poison.t > 0 && Math.random() < 0.25) particule(e.x + rnd(0, e.w), e.y + e.h / 2, rnd(-6, 6), rnd(-25, -10), e.poison.coul || COUL_ELEMENT.aucun, 0.6);
   }
   e.brulure -= dt; e.poison.t -= dt;
   if (e.poison.t <= 0) e.poison.doses = 0;
   if (e.mort) return;
+  if (e.ralenti > 0) { // élément « ralentir » : l'ennemi vit au ralenti (moitié moins fort sur les boss)
+    e.ralenti -= dt;
+    dt *= 1 - e.ralentiForce * (e.boss ? 0.5 : 1);
+    if (Math.random() < 0.2) particule(e.x + rnd(0, e.w), e.y + rnd(0, e.h), rnd(-5, 5), rnd(5, 15), e.ralentiCoul, 0.5);
+  }
   if (e.paralyse > 0) {
     e.paralyse -= dt;
     if (Math.random() < 0.3) particule(e.x + rnd(0, e.w), e.y + rnd(0, e.h), rnd(-30, 30), rnd(-30, 30), COUL_ELEMENT.foudre, 0.2);
@@ -2278,7 +2307,7 @@ function dessinerTirs(ox, oy) {
 function toucherAvecArme(e, final, dmg, el) {
   if (e.dormant > 0 || e.intangible) return;
   const d = armeDef(), zero = d.effet === "zeroday";
-  const magique = el === "feu" || el === "foudre";
+  const magique = elementMagique(el);
   if (!zero && e.spectre && !(e.materialise > 0) && !magique) { // un Spectre résiste aux coups physiques
     dmg *= 0.25;
     if (e.immuTxt <= 0) { nombre(e.x + e.w / 2, e.y - 8, "RÉSISTE : COMPÉTENCE !", "#c9b0ff"); e.immuTxt = 1.2; }
@@ -2287,7 +2316,7 @@ function toucherAvecArme(e, final, dmg, el) {
   if (zero) { const def = e.defense; e.defense = 0; infligerDegats(e, dmg, final); e.defense = def; perdrePV(1); }
   else infligerDegats(e, dmg, final);
   son("coup");
-  appliquerElementType(e, el);
+  appliquerElementType(e, el, dmg);
   if (e.mort) return;
   if (d.effet === "chaine") J.chaine = (J.chaine || 0) + 1;
   if (aEffetArmure("marque")) e.marque = 4;
@@ -2297,12 +2326,6 @@ function toucherAvecArme(e, final, dmg, el) {
   if (d.effet === "ddos") for (const o of ennemis) if (!o.mort && Math.abs(o.x + o.w / 2 - (e.x + e.w / 2)) < 40) o.paralyse = Math.max(o.paralyse, o.boss ? 0.3 : 0.8);
   if (!e.boss && e.type !== "trojan" && e.type !== "parasite") e.x += J.dir * (final ? 10 : 3);
   secousse = Math.max(secousse, final ? 0.14 : 0.05);
-}
-function appliquerElementType(e, el) { // comme appliquerElement, mais avec l'élément de l'arme
-  if (e.element && e.element === el) return;   // un ennemi de feu ne brûle pas, un ennemi de foudre ne se paralyse pas
-  if (el === ELEMENT_ACTIF) { appliquerElement(e); return; }
-  if (el === "feu") e.brulure = EFFETS_ELEMENTS.feu.duree;
-  else if (el === "foudre") { e.jauge++; if (e.jauge >= EFFETS_ELEMENTS.foudre.coupsPourParalyser) { e.jauge = 0; e.paralyse = e.boss ? 0.6 : EFFETS_ELEMENTS.foudre.dureeParalysie; } }
 }
 function explosionCorrompue(x, y, dmg) {
   son("explosion");
@@ -2371,7 +2394,11 @@ function rattrapage(depuis, jusqua) {
    ★★ CODEUR — ÉTAPE 4 : SAUVEGARDE (automatique, code, QR, fichier)
    Tout reste sur le téléphone du joueur : aucune donnée n'est envoyée.
    ================================================================== */
-const CLE_SAUVEGARDE = "nexi_infection_sauvegarde";   // nom de la sauvegarde dans le navigateur
+const VERSION = "V0.9.6 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
+// Mode démo (pour le stand) : à chaque porte, on choisit la salle suivante parmi les 10 prochaines.
+// Il s'active tout seul sur l'adresse /demo/ (ou avec ?demo à la fin de l'adresse), avec sa propre sauvegarde.
+const MODE_DEMO = /[?&]demo\b/.test(location.search);
+const CLE_SAUVEGARDE = "nexi_infection_sauvegarde" + (MODE_DEMO ? "_demo" : "");   // nom de la sauvegarde dans le navigateur
 const BASE32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";     // pas de I, L, O, U : on ne les confond pas
 let partieSauvee = null;                               // dernière photo de la partie en cours
 
@@ -4211,7 +4238,7 @@ function dessinerEnnemi(e, ox, oy) {
   if (e.type === "trojan" && e.etat === "frappe") rect(e.dir > 0 ? sx + im.d.width - 4 : sx - 18, sy + 12, 22, 14, "rgba(255,216,77,0.45)");
   if (e.paralyse > 0 && Math.floor(temps * 12) % 2) rect(sx, sy, im.d.width, 1, COUL_ELEMENT.foudre);
   if (e.pv < e.pvMax) { rect(sx + im.d.width / 2 - 8, sy - 4, 16, 2, C.encre); rect(sx + im.d.width / 2 - 8, sy - 4, 16 * Math.max(0, e.pv / e.pvMax), 2, C.corail); }
-  if (e.jauge > 0) rect(sx + im.d.width / 2 - 8, sy - 6, 16 * e.jauge / EFFETS_ELEMENTS.foudre.coupsPourParalyser, 1, COUL_ELEMENT.foudre);
+  if (e.jauge > 0) rect(sx + im.d.width / 2 - 8, sy - 6, 16 * e.jauge / (e.jaugeMax || 3), 1, e.jaugeCoul || COUL_ELEMENT.aucun);
 }
 
 function dessinerPorte(ox, oy) {
@@ -4279,6 +4306,7 @@ function dessinerHUD() {
   let yh = 22;
   if (setComplet()) { texte("SET CORROMPU : " + SYNERGIES[J.virus || "aucun"].nom, 4, yh, C.corail, C.encre); yh += 8; }
   if (ELEMENT_ACTIF !== "aucun") { texte(ELEMENT_ACTIF, 4, yh, COUL_ELEMENT[ELEMENT_ACTIF], C.encre); yh += 8; }
+  else if (ELEMENT !== "aucun") { texte("ELEMENT INCONNU : " + ELEMENT, 4, yh, C.corail, C.encre); yh += 8; }
   if (J.virus) texte("VIRUS : " + VIRUS[J.virus].nom, 4, yh, "#c9b0ff", C.encre);
   if (etat === "jeu") { dessinerBoutonPause(); dessinerIconeSauvegarde(); }
   let y = 17;

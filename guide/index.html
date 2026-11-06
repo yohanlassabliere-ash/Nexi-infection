@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guide Nexi : Infection</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=JetBrains+Mono:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  /* Guide du code : page claire façon carnet technique, accents repris du jeu. */
+  :root {
+    --papier: #fbfaff; --encre: #1d1236; --doux: #5a5080; --trait: #ddd6f3; --violet: #6d14eb;
+    --menthe: #0e8f72; --corail: #c8344f; --or: #9a6b00; --code-fond: #140c26; --code-texte: #e8e2ff;
+    --titre: "Silkscreen", "Courier New", monospace;
+    --corps: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--papier); color: var(--encre); font: 16px/1.6 var(--corps); }
+  .page { max-width: 860px; margin: 0 auto; padding: 32px max(16px, env(safe-area-inset-left, 0px)) 64px; }
+  h1, h2, h3 { font-family: var(--titre); font-weight: normal; letter-spacing: .5px; text-wrap: balance; }
+  h1 { font-size: 34px; color: var(--violet); margin: 0 0 6px; }
+  h2 { font-size: 22px; color: var(--violet); margin: 48px 0 10px; padding-top: 12px; border-top: 3px solid var(--trait); }
+  h3 { font-size: 16px; color: var(--encre); margin: 26px 0 6px; }
+  p, li { max-width: 68ch; }
+  a { color: var(--violet); }
+  code { font: 14px var(--mono); background: #eee9fb; padding: 1px 5px; border-radius: 3px; }
+  pre { font: 13px/1.55 var(--mono); background: var(--code-fond); color: var(--code-texte); padding: 14px 16px; overflow-x: auto; border-radius: 4px; margin: 10px 0; }
+  pre .c { color: #8b7fc0; } pre .v { color: #3df5c4; } pre .t { color: #ffd84d; } pre .k { color: #ff8fa3; }
+  .lede { font-size: 19px; color: var(--doux); max-width: 60ch; }
+  .meta { font: 13px var(--mono); color: var(--doux); }
+  .ouvrir { display: inline-block; font: 13px var(--titre); text-decoration: none; color: var(--violet); border: 2px solid var(--violet); padding: 3px 9px; margin: 4px 0; }
+  .ouvrir::after { content: " →"; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--trait); }
+  th { font: 12px var(--titre); color: var(--doux); letter-spacing: .5px; }
+  td code { white-space: nowrap; }
+  .tableau { overflow-x: auto; }
+  .encadre { border-left: 4px solid var(--menthe); background: #eefaf6; padding: 10px 14px; margin: 14px 0; }
+  .encadre.attention { border-color: var(--corail); background: #fdf0f2; }
+  .encadre.essaie { border-color: var(--or); background: #fdf7e6; }
+  .encadre b:first-child { font-family: var(--titre); font-weight: normal; letter-spacing: .5px; }
+  .sommaire { columns: 2; column-gap: 32px; padding-left: 20px; }
+  @media (max-width: 640px) { .sommaire { columns: 1; } h1 { font-size: 26px; } td code { white-space: normal; overflow-wrap: anywhere; } }
+  .mission { border: 2px solid var(--trait); padding: 4px 16px 10px; margin: 14px 0; }
+  .mission h3 { margin-top: 12px; }
+  .carte { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 12px 0; }
+  .zone { border: 2px solid var(--trait); padding: 10px 12px; }
+  .zone b { font: 13px var(--titre); color: var(--violet); display: block; margin-bottom: 4px; }
+  .zone.debutant { border-color: var(--menthe); }
+  .schema { font: 14px var(--mono); background: #eee9fb; padding: 14px; white-space: pre; overflow-x: auto; line-height: 1.5; }
+  @media print {
+    body { font-size: 11.5pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-before: page; border-top: 0; margin-top: 0; }
+    h2.suite { break-before: auto; }
+    pre, .encadre, .mission, table, .schema { break-inside: avoid; }
+    pre, .schema { white-space: pre-wrap; overflow-wrap: anywhere; }
+    a.ouvrir { border-width: 1px; }
+    .pasImpression { display: none; }
+  }
+  @page { size: A4; margin: 16mm 15mm; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="meta">NEXA Digital School — Salon Your Future, Lyon</p>
+<h1>NEXI : INFECTION<br>LE GUIDE DU CODE</h1>
+<p class="lede">Tout le jeu tient dans un seul fichier, <code>index.html</code>. Ce guide t'explique à quoi sert chaque partie, comment lire une ligne de code, et où aller pour changer ce que tu veux.</p>
+<p class="pasImpression"><a class="ouvrir" href="../atelier/">Ouvrir l'atelier</a> &nbsp; <a class="ouvrir" href="guide_nexi_infection.pdf" download>Télécharger le PDF</a></p>
+<div class="encadre"><b>COMMENT T'EN SERVIR</b><br>Les boutons <span class="ouvrir" style="margin:0">Ouvrir dans l'atelier</span> ouvrent l'atelier directement sur la bonne ligne, avec la valeur déjà sélectionnée : tu n'as plus qu'à taper. Dans le PDF, ils fonctionnent aussi (il faut Internet).</div>
+
+<h3>Sommaire</h3>
+<ol class="sommaire">
+  <li><a href="#atelier">L'atelier en 2 minutes</a></li>
+  <li><a href="#bases">Les bases du code</a></li>
+  <li><a href="#missions">Les missions de l'atelier</a></li>
+  <li><a href="#carte">La carte du fichier</a></li>
+  <li><a href="#debutant">Les réglages ★ Débutant</a></li>
+  <li><a href="#codeur">Les données ★★ Codeur</a></li>
+  <li><a href="#apparence">Dessins, couleurs et animations</a></li>
+  <li><a href="#moteur">Le moteur du jeu</a></li>
+  <li><a href="#recettes">Je veux… : les recettes</a></li>
+  <li><a href="#pannes">Ça ne marche plus ?</a></li>
+  <li><a href="#glossaire">Petit glossaire</a></li>
+</ol>
+
+<!-- ============================================================== -->
+<h2 id="atelier">1. L'atelier en 2 minutes</h2>
+<p>L'atelier est une page web avec le code du jeu à gauche et le jeu à droite.</p>
+<div class="tableau"><table>
+  <tr><th>Bouton</th><th>Ce qu'il fait</th></tr>
+  <tr><td><b>▶ LANCER</b> (ou Ctrl + Entrée)</td><td>Relance le jeu avec ton code. Si tu as fait une faute, un message rouge indique la ligne.</td></tr>
+  <tr><td><b>Aller à…</b></td><td>Saute à une partie du code (chaque partie commence par un titre ★ ou ★★).</td></tr>
+  <tr><td><b>Liste des réglages</b> (sous le jeu)</td><td>Chaque réglage avec sa valeur actuelle et un lien « ligne N » : un clic sélectionne la valeur à changer.</td></tr>
+  <tr><td><b>JOUER SUR MON TÉLÉPHONE</b></td><td>Affiche un QR code : scanne-le, tu joues à <i>ta</i> version et tu peux la garder (le lien contient tes modifications).</td></tr>
+  <tr><td><b>TÉLÉCHARGER MON CODE</b></td><td>Enregistre ton fichier <code>nexi_infection_ma_version.html</code> : double-clic dessus pour jouer, ouvre-le dans un éditeur de texte pour continuer à coder chez toi.</td></tr>
+  <tr><td><b>NOUVEAU VISITEUR</b></td><td>Efface toutes les modifications et revient au code d'origine.</td></tr>
+</table></div>
+<div class="encadre essaie"><b>ASTUCE</b><br>Clique une fois dans le jeu avant de jouer au clavier : flèches ou ZQSD pour bouger, Espace pour sauter, J pour attaquer, K pour la compétence, Échap ou P pour la pause.</div>
+
+<!-- ============================================================== -->
+<h2 id="bases">2. Les bases du code</h2>
+<p>Le jeu est écrit en <b>JavaScript</b>, le langage des pages web. Pas besoin de tout comprendre pour le modifier : voici les 8 choses que tu vas croiser partout, avec de vrais exemples tirés du jeu.</p>
+
+<h3>Le commentaire : du texte pour les humains</h3>
+<pre><span class="c">// Points de vie. Essaie 999 pour un Nexi quasi invincible.</span></pre>
+<p>Tout ce qui suit <code>//</code> sur une ligne est ignoré par l'ordinateur. Ce sont des notes pour toi. Les gros blocs entre <code>/*</code> et <code>*/</code> aussi.</p>
+
+<h3>La constante : un nom qui retient une valeur</h3>
+<pre><span class="k">const</span> MESSAGE_KO = <span class="t">"SYSTEM FAILURE"</span>;</pre>
+<p><code>const</code> crée une boîte nommée <code>MESSAGE_KO</code> qui contient le texte <code>"SYSTEM FAILURE"</code>. Partout où le jeu écrit <code>MESSAGE_KO</code>, il utilise ce texte. Le <code>;</code> termine l'instruction.</p>
+
+<h3>Les 3 types de valeurs que tu vas changer</h3>
+<div class="tableau"><table>
+  <tr><th>Type</th><th>Exemple</th><th>Règle</th></tr>
+  <tr><td><b>Nombre</b></td><td><code>100</code>, <code>0.22</code>, <code>-5</code></td><td>Sans guillemets. La virgule décimale s'écrit avec un <b>point</b> : <code>0.22</code>, pas <code>0,22</code>.</td></tr>
+  <tr><td><b>Texte</b> (chaîne)</td><td><code>"Cheval de Troie"</code></td><td>Toujours entre guillemets <code>" "</code>, au début <i>et</i> à la fin.</td></tr>
+  <tr><td><b>Booléen</b></td><td><code>true</code> / <code>false</code></td><td>Vrai ou faux, sans guillemets. Sert d'interrupteur.</td></tr>
+</table></div>
+
+<h3>L'objet : une fiche avec des cases nommées</h3>
+<pre><span class="k">const</span> JOUEUR = {
+  PV_MAX: <span class="v">100</span>,          <span class="c">// Points de vie</span>
+  VITESSE: <span class="v">72</span>,          <span class="c">// Vitesse de déplacement</span>
+  ONE_SHOT: <span class="v">false</span>,      <span class="c">// true = chaque coup tue l'ennemi</span>
+};</pre>
+<p>Entre <code>{</code> et <code>}</code>, chaque ligne est un couple <code>nom: valeur,</code>. Le jeu lit la valeur avec un point : <code>JOUEUR.PV_MAX</code> vaut <code>100</code>. <b>La virgule à la fin de chaque ligne est obligatoire</b> (sauf parfois la dernière).</p>
+
+<h3>Le tableau : une liste rangée</h3>
+<pre>PETITS: [<span class="t">"ver"</span>, <span class="t">"glitch"</span>, <span class="t">"spyware"</span>, <span class="t">"script"</span>, <span class="t">"drone"</span>],</pre>
+<p>Entre <code>[</code> et <code>]</code>, des valeurs séparées par des virgules. Ici, la liste des petits ennemis qui peuvent apparaître. Retire <code>"drone"</code> et il n'y aura plus de drones.</p>
+
+<h3>La fonction : une recette que le jeu peut suivre</h3>
+<pre><span class="k">function</span> px(x, y, c) { g.fillStyle = c; g.fillRect(x | <span class="v">0</span>, y | <span class="v">0</span>, <span class="v">1</span>, <span class="v">1</span>); }</pre>
+<p><code>px</code> dessine <b>un pixel</b> de couleur <code>c</code> à la position <code>x</code>, <code>y</code> (<code>x | 0</code> arrondit à un nombre entier). Le jeu appelle <code>px(10, 20, "#ffffff")</code> pour poser un pixel blanc. Tout le jeu est fait de fonctions comme celle-ci, qui s'appellent entre elles.</p>
+
+<h3>La condition : « si… alors… »</h3>
+<pre><span class="k">if</span> (J.pv &lt;= <span class="v">0</span>) mourir();</pre>
+<p>« Si les PV de Nexi (<code>J.pv</code>) sont inférieurs ou égaux à 0, alors appeler la fonction <code>mourir</code> ». Les comparaisons : <code>===</code> égal, <code>!==</code> différent, <code>&lt;</code> plus petit, <code>&gt;</code> plus grand.</p>
+
+<h3>Les couleurs : le code hexadécimal</h3>
+<pre>P:<span class="t">"#7b3fe0"</span></pre>
+<p>Une couleur s'écrit <code>#</code> suivi de 6 caractères : 2 pour le <b>rouge</b>, 2 pour le <b>vert</b>, 2 pour le <b>bleu</b>, de <code>00</code> (rien) à <code>ff</code> (maximum). <code>#ff0000</code> = rouge pur, <code>#000000</code> = noir, <code>#ffffff</code> = blanc. Ici <code>7b</code> de rouge, <code>3f</code> de vert, <code>e0</code> de bleu : le violet de Nexi.</p>
+
+<!-- ============================================================== -->
+<h2 id="missions">3. Les missions de l'atelier</h2>
+<p>Cinq défis pour découvrir le code pas à pas. Chacun prend 2 à 5 minutes. Après chaque modification : <b>▶ LANCER</b>.</p>
+
+<div class="mission"><h3>Mission 1 — Nexi surpuissant (un nombre)</h3>
+<p>Change les points de vie de 100 à 999, puis la hauteur du saut de 215 à 350.</p>
+<pre>PV_MAX: <span class="v">999</span>,
+FORCE_SAUT: <span class="v">350</span>,</pre>
+<p><b>Ce que tu dois voir :</b> la barre de vie affiche 999, et Nexi saute très haut.<br><b>Tu as appris :</b> un nombre dans un objet, et la virgule qui termine la ligne.</p>
+<a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#PV_MAX">Ouvrir PV_MAX dans l'atelier</a> <a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#FORCE_SAUT">Ouvrir FORCE_SAUT</a></div>
+
+<div class="mission"><h3>Mission 2 — Renomme un boss (un texte)</h3>
+<pre>troie: <span class="t">"Bourrin 3000"</span>,</pre>
+<p><b>Ce que tu dois voir :</b> le nom en grand quand le premier mini-boss arrive (salle 7). Tu peux aussi changer le texte de la mort : <code>MESSAGE_KO = "GAME OVER";</code><br><b>Tu as appris :</b> un texte s'écrit toujours entre guillemets.</p>
+<a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#troie">Ouvrir le nom du boss</a> <a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#const%20MESSAGE_KO">Ouvrir le texte de mort</a></div>
+
+<div class="mission"><h3>Mission 3 — Change les règles (un booléen, un choix)</h3>
+<pre>ONE_SHOT: <span class="v">true</span>,
+<span class="k">const</span> ELEMENT = <span class="t">"feu"</span>;</pre>
+<p><b>Ce que tu dois voir :</b> avec <code>ONE_SHOT: true</code>, chaque ennemi touché meurt d'un coup. Avec <code>"feu"</code>, tes coups brûlent (les choix possibles sont écrits juste au-dessus : <code>"aucun"</code>, <code>"feu"</code>, <code>"poison"</code>, <code>"foudre"</code>, <code>"glace"</code>, <code>"vampire"</code>).<br><b>Tu as appris :</b> <code>true</code>/<code>false</code> sont des interrupteurs ; un texte doit parfois être pris dans une liste précise.</p>
+<a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#ONE_SHOT">Ouvrir ONE_SHOT</a> <a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#const%20ELEMENT">Ouvrir ELEMENT</a></div>
+
+<div class="mission"><h3>Mission 4 — Repeins Nexi (une couleur)</h3>
+<pre><span class="k">const</span> PAL_NEXI = { K:<span class="t">"#14082c"</span>, P:<span class="t">"#e03f3f"</span>, L:<span class="t">"#ff7b7b"</span>, d:<span class="t">"#a81f1f"</span>, …</pre>
+<p><code>P</code> est le violet principal du corps, <code>L</code> sa version claire, <code>d</code> sa version sombre. Change les trois avec la même teinte, plus claire et plus sombre : Nexi devient rouge (ou la couleur de ton choix).<br><b>Tu as appris :</b> les couleurs hexadécimales, et qu'une lettre du dessin correspond à une couleur de la palette.</p>
+<a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#P">Ouvrir la couleur de Nexi</a></div>
+
+<div class="mission"><h3>Mission 5 (bonus) — Crée ton propre bonus de porte (une liste d'objets)</h3>
+<p>Dans <code>LISTE_BONUS</code>, copie une ligne, colle-la juste en dessous et change-la :</p>
+<pre>{ nom: <span class="t">"Mode turbo"</span>, desc: <span class="t">"Vitesse +80 %"</span>, duree: <span class="v">3</span>, mods: { vitesse: <span class="v">1.8</span> } },</pre>
+<p><b>Ce que tu dois voir :</b> en passant les portes, ton bonus finit par tomber (bandeau « BONUS : Mode turbo »). Pour le tester tout de suite, mets <code>CHANCE_BONUS: 1</code> dans <code>PORTES</code>.<br><b>Tu as appris :</b> une liste d'objets, et qu'on code souvent en copiant puis en adaptant une ligne qui marche.</p>
+<a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#~const%20LISTE_BONUS">Ouvrir LISTE_BONUS</a></div>
+
+<div class="mission"><h3>Mission 6 (bonus) — Invente ton propre élément</h3>
+<p>Dans <code>EFFETS_ELEMENTS</code>, copie la ligne <code>feu</code>, colle-la en dessous et transforme-la :</p>
+<pre>  lave: { effet: <span class="t">"brulure"</span>, couleur: <span class="t">"#ff3300"</span>, magique: <span class="v">true</span>, degatsParSec: <span class="v">20</span>, duree: <span class="v">5</span> },</pre>
+<p>Puis, tout en haut du fichier : <code>const ELEMENT = "lave";</code></p>
+<p><b>Ce que tu dois voir :</b> le nom « lave » en rouge sous la barre de vie, et des ennemis qui fondent. Si tu lis « ELEMENT INCONNU », les deux noms ne sont pas écrits pareil.<br><b>Tu as appris :</b> le nom d'une ligne sert d'identifiant ailleurs dans le code ; il faut l'écrire exactement pareil aux deux endroits.</p>
+<a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#~const%20EFFETS_ELEMENTS">Ouvrir EFFETS_ELEMENTS</a></div>
+
+<!-- ============================================================== -->
+<h2 id="carte">4. La carte du fichier</h2>
+<p>Le fichier fait environ 4 500 lignes, rangées du plus simple au plus technique. Les titres en <code>★ DÉBUTANT</code> et <code>★★ CODEUR</code> servent de panneaux indicateurs (menu « Aller à… » de l'atelier).</p>
+<div class="carte">
+  <div class="zone debutant"><b>★ DÉBUTANT (début du fichier)</b>Les réglages simples : vie, vitesse, compétence, monstres, noms des boss, histoire, progression. Que des nombres, des textes et des true/false.</div>
+  <div class="zone"><b>★★ CODEUR — LES DONNÉES</b>Les listes du jeu : portes, butin, bestiaire, salles, boss, virus, armes, armures, poids, musique, bruitages, pièges, monde.</div>
+  <div class="zone"><b>★★ CODEUR — LES DESSINS</b>Le pantin de Nexi (poses), les palettes de couleurs, les sprites en lettres, les boss dessinés avec des formes.</div>
+  <div class="zone"><b>★★ CODEUR — LE MOTEUR</b>Les fonctions qui font vivre le jeu : salles, ennemis, combat, équipement, sauvegarde, son, boss, mise en scène.</div>
+  <div class="zone"><b>★★ CODEUR — AFFICHAGE ET DÉMARRAGE</b>Le dessin de chaque image, les boutons tactiles, le clavier, la boucle de jeu et le lancement.</div>
+</div>
+<div class="encadre"><b>LA RÈGLE D'OR</b><br>Plus tu descends dans le fichier, plus le code est technique. Les 150 premières lignes suffisent pour transformer le jeu.</div>
+
+<!-- ============================================================== -->
+<h2 id="debutant">5. Les réglages ★ Débutant</h2>
+
+<h3>CONFIGURATION DU JOUEUR (Nexi)</h3>
+<div class="tableau"><table>
+  <tr><th>Réglage</th><th>Départ</th><th>Ce qu'il change</th><th>Essaie</th></tr>
+  <tr><td><code>PV_MAX</code></td><td>100</td><td>Les points de vie maximum.</td><td>999</td></tr>
+  <tr><td><code>VITESSE</code></td><td>72</td><td>La vitesse de déplacement, en pixels par seconde.</td><td>140 ou 35</td></tr>
+  <tr><td><code>FORCE_SAUT</code></td><td>215</td><td>La force du saut (vers le haut).</td><td>300</td></tr>
+  <tr><td><code>DEGATS_LEGER</code></td><td>10</td><td>Les dégâts des coups normaux (toutes les armes en tiennent compte).</td><td>30</td></tr>
+  <tr><td><code>DEGATS_COMBO</code></td><td>18</td><td>Les dégâts du 3e coup du combo à l'épée.</td><td>50</td></tr>
+  <tr><td><code>COOLDOWN_LEGER</code></td><td>0.22</td><td>Le temps (en secondes) entre deux coups. Plus petit = plus de coups par seconde.</td><td>0.05</td></tr>
+  <tr><td><code>REGEN_PV</code></td><td>0</td><td>PV rendus à chaque pulsation.</td><td>5</td></tr>
+  <tr><td><code>PULSATION_PV</code></td><td>6</td><td>Toutes les combien de secondes les soins et pertes lents s'appliquent.</td><td>2</td></tr>
+  <tr><td><code>ONE_SHOT</code></td><td>false</td><td>true = chaque coup qui touche tue l'ennemi.</td><td>true</td></tr>
+  <tr><td><code>UN_COUP_KO</code></td><td>false</td><td>true = mode hardcore : Nexi meurt au premier coup.</td><td>true</td></tr>
+</table></div>
+<a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#PV_MAX">Ouvrir dans l'atelier</a>
+
+<h3>LA COMPÉTENCE : ONDE N'SHIELD</h3>
+<p>La touche K (bouton vert) libère une onde autour de Nexi. Elle touche les Spectres et les rend tangibles 3 secondes.</p>
+<div class="tableau"><table>
+  <tr><td><code>DEGATS: 14</code></td><td>Dégâts de l'onde.</td></tr>
+  <tr><td><code>RAYON: 40</code></td><td>Taille de l'onde en pixels (essaie 120).</td></tr>
+  <tr><td><code>ETOURDISSEMENT: 1</code></td><td>Secondes pendant lesquelles les ennemis touchés sont immobiles.</td></tr>
+  <tr><td><code>RECUL: 14</code></td><td>Distance à laquelle ils sont repoussés.</td></tr>
+  <tr><td><code>COOLDOWN: 4</code></td><td>Secondes avant de pouvoir la relancer (essaie 0.5).</td></tr>
+</table></div>
+<a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#RAYON">Ouvrir dans l'atelier</a>
+
+<h3>ÉLÉMENT DES ATTAQUES</h3>
+<pre><span class="k">const</span> ELEMENT = <span class="t">"aucun"</span>;</pre>
+<p>Remplace le mot entre guillemets par <code>"feu"</code> (brûlure), <code>"poison"</code> (se cumule à chaque coup), <code>"foudre"</code> (paralyse au bout de 3 coups), <code>"glace"</code> (ralentit) ou <code>"vampire"</code> (Nexi récupère de la vie en frappant). Garde les guillemets et le <code>;</code>. Si le nom n'existe pas, le jeu affiche « ELEMENT INCONNU » sous la barre de vie et joue sans élément. Tu peux aussi inventer le tien : voir <a href="#elements">Les éléments</a>.</p>
+
+<h3>DIFFICULTÉ DES MONSTRES</h3>
+<div class="tableau"><table>
+  <tr><td><code>MULT_PV: 1</code></td><td>Multiplie les PV de tous les ennemis (3 = trois fois plus résistants).</td></tr>
+  <tr><td><code>MULT_DEGATS: 1</code></td><td>Multiplie leurs dégâts (0.5 = partie tranquille).</td></tr>
+  <tr><td><code>GAIN_PAR_SALLE: 0.045</code></td><td>À chaque salle, les ennemis deviennent 4,5 % plus forts. Ça se cumule : en salle 30, ils sont 3,6 fois plus forts.</td></tr>
+  <tr><td><code>ENNEMIS_DEPART: 2</code> / <code>ENNEMIS_MAX: 9</code></td><td>Le nombre d'ennemis dans la 1re salle, et le maximum.</td></tr>
+  <tr><td><code>CHANCE_ELEMENTAIRE: 0.15</code></td><td>15 % des ennemis sont de feu ou de foudre (halo coloré), à partir de la salle 3.</td></tr>
+</table></div>
+
+<h3>NOMS DES BOSS ET HISTOIRE</h3>
+<p><code>NOMS_BOSS</code> et <code>TITRES_BOSS</code> : les noms affichés en grand à l'arrivée de chaque boss. <code>HISTOIRE.RENCONTRES_AVANT_VER_ULTIME</code> : combien de fois on affronte le Tyran avant de trouver le Ver Ultime (mets 1 pour voir la fin plus vite).</p>
+
+<h3>PROGRESSION DE NEXI</h3>
+<div class="tableau"><table>
+  <tr><td><code>XP_PREMIER_NIVEAU: 20</code></td><td>XP pour passer niveau 2 (chaque niveau suivant demande <code>XP_EN_PLUS_PAR_NIVEAU</code> de plus).</td></tr>
+  <tr><td><code>FRAGMENTS_GARDES_A_LA_MORT: 0.25</code></td><td>Part des fragments conservée quand Nexi meurt.</td></tr>
+  <tr><td><code>TAILLE_SAC: 6</code> / <code>TAILLE_COFFRE: 12</code></td><td>Places dans le sac et dans le coffre du Terminal.</td></tr>
+  <tr><td><code>SOIN_FRAGMENTS_PAR_PV: 0.4</code></td><td>Prix du soin à la porte, par PV manquant.</td></tr>
+  <tr><td><code>COUT_AMELIORATION: 25</code> / <code>HAUSSE_COUT: 1.6</code></td><td>Prix d'une amélioration au Terminal : 25, puis ×1,6 à chaque fois (25, 40, 64, 102…).</td></tr>
+  <tr><td><code>CHARGE_DE_BASE: 30</code></td><td>Le poids que Nexi porte sans être ralenti au départ.</td></tr>
+  <tr><td><code>SAUVEGARDE_AUTO: true</code></td><td>false = rien n'est gardé dans le navigateur.</td></tr>
+</table></div>
+<p><code>GAIN_PAR_POINT</code> dit ce que rapporte 1 point dépensé au Terminal : +10 PV, +8 % de dégâts, +4 % de vitesse, +4 de défense, ou +3 de charge (endurance).</p>
+
+<!-- ============================================================== -->
+<h2 id="codeur">6. Les données ★★ Codeur</h2>
+<p>Ces sections décrivent le contenu du jeu sous forme de listes. Pour chacune : à quoi elle sert, comment lire une ligne, ce que tu peux changer sans risque.</p>
+
+<h3>TEXTES DE MORT</h3>
+<p><code>MESSAGE_KO</code> et <code>SOUS_TITRE_KO</code> : le texte de l'écran de mort.</p>
+
+<h3 id="elements">LES ÉLÉMENTS</h3>
+<pre>glace: { effet: <span class="t">"ralentir"</span>, couleur: <span class="t">"#9fe8ff"</span>, magique: <span class="v">true</span>, force: <span class="v">0.5</span>, duree: <span class="v">3</span> },</pre>
+<p>Une ligne = un élément. Le nom avant les deux-points (<code>glace</code>) est celui à écrire dans <code>const ELEMENT = "glace";</code>. Chaque élément choisit un <code>effet</code> parmi les 5 que le moteur sait faire :</p>
+<div class="tableau"><table>
+  <tr><th>effet</th><th>Ce qu'il fait</th><th>Ses réglages</th></tr>
+  <tr><td><code>"brulure"</code></td><td>Dégâts continus pendant quelques secondes.</td><td><code>degatsParSec</code>, <code>duree</code></td></tr>
+  <tr><td><code>"cumul"</code></td><td>Chaque coup ajoute une dose ; plus de doses = plus de dégâts.</td><td><code>degatsParSec</code> (par dose), <code>duree</code>, <code>cumulMax</code></td></tr>
+  <tr><td><code>"paralysie"</code></td><td>Remplit une jauge ; pleine, l'ennemi est figé.</td><td><code>coupsPourParalyser</code>, <code>dureeParalysie</code>, <code>degatsBonus</code></td></tr>
+  <tr><td><code>"ralentir"</code></td><td>L'ennemi bouge et attaque moins vite (deux fois moins fort sur les boss).</td><td><code>force</code> (0.5 = moitié moins vite, 0.9 au maximum), <code>duree</code></td></tr>
+  <tr><td><code>"volDeVie"</code></td><td>Nexi récupère une part des dégâts qu'il inflige.</td><td><code>part</code> (0.15 = 15 %)</td></tr>
+</table></div>
+<p>Deux options de plus : <code>magique: true</code> permet de blesser les Spectres sans compétence, <code>spectresImmunises: true</code> rend les Spectres insensibles à l'élément. <code>couleur</code> colore le nom de l'élément, les particules et l'onde.</p>
+<div class="encadre essaie"><b>À TOI</b><br>Pour créer ton élément : copie une ligne, change le nom, l'effet, les chiffres et la couleur, puis écris ce nom dans <code>ELEMENT</code> (mission 6). Ajouter un 6e type d'effet demande d'écrire du code dans la fonction <code>appliquerElementType</code> : c'est un vrai défi de codeur.</div>
+
+<h3>LES PORTES (bonus et malus)</h3>
+<pre>{ nom: <span class="t">"Surcharge offensive"</span>, desc: <span class="t">"Dégâts +20 %"</span>, duree: <span class="v">3</span>, mods: { degats: <span class="v">1.2</span> } },</pre>
+<p>À chaque porte, le jeu tire un bonus (liste <code>LISTE_BONUS</code>) ou un malus (<code>LISTE_MALUS</code>). <code>duree</code> = nombre de salles. <code>mods</code> multiplie une caractéristique (<code>vitesse</code>, <code>degats</code>, <code>cadence</code>, <code>cooldownLourd</code>, <code>pvEnnemis</code>). <code>ajouts</code> ajoute une valeur (<code>pvParPulsation</code>). <code>drapeaux</code> active un effet spécial déjà codé (<code>gardien</code>, <code>foudreAuto</code>, <code>parasite</code>…). <code>PORTES.CHANCE_BONUS</code> règle la chance d'avoir un bonus. Dans la salle de repos, bonus et malus sont en pause.</p>
+
+<h3>LOOT (le butin)</h3>
+<p>Les chances (entre 0 et 1) : fiole de soin, coffre dans une salle, objet lâché par un ennemi, arme enchantée de feu ou de foudre. <code>NIVEAU_TOUTES_LES: 12</code> : les objets trouvés gagnent 1 niveau toutes les 12 salles.</p>
+
+<h3>BESTIAIRE</h3>
+<pre>ver: { nom: <span class="t">"Ver informatique"</span>, pv: <span class="v">18</span>, degats: <span class="v">10</span>, vitesse: <span class="v">30</span>, apparitionDes: <span class="v">1</span>, poids: <span class="v">3</span> },</pre>
+<p>Une ligne par ennemi. <code>apparitionDes</code> = première salle où il peut apparaître, <code>poids</code> = sa fréquence (plus grand = plus courant). <code>spectre: true</code> le rend résistant aux coups physiques, <code>defense: 0.5</code> lui fait perdre moitié moins de PV. Le comportement de chaque ennemi est codé dans la fonction <code>majEnnemi</code>.</p>
+
+<h3>PROGRESSION DES SALLES</h3>
+<p><code>PROGRESSION.CYCLE</code> décrit un cycle de 6 salles : on ajoute des petits ennemis, puis des gros, puis le mini-boss (<code>elite: true</code>). Juste avant chaque mini-boss, le jeu insère une salle de repos (Terminal). Chaque nouveau cycle recommence avec un ennemi de plus.</p>
+
+<h3>LES BOSS et LES VIRUS</h3>
+<p><code>BOSS</code> donne les PV et les dégâts de base de chaque boss. <code>GAIN_PAR_CYCLE: 0.55</code> : à chaque cycle, leurs PV sont multipliés par 1,55 (et leurs dégâts par 1,25). <code>ARCHONTE_TOUS_LES: 2</code> : le Tyran revient tous les 2 cycles. Chaque mini-boss vaincu lâche un <b>virus</b> (liste <code>VIRUS</code>) : une compétence qui remplace l'onde, avec son avantage (<code>effet</code>), son défaut (<code>contre</code>) et son temps de recharge.</p>
+
+<h3>LES ARMES</h3>
+<pre>katana: { nom: <span class="t">"Katana Fibre"</span>, cat: <span class="t">"epee"</span>, poids: <span class="v">3</span>, degats: <span class="v">10</span>, gain: <span class="v">1.5</span>, portee: <span class="v">1.4</span>, desc: <span class="t">"Lame fine, portée plus longue"</span> },</pre>
+<div class="tableau"><table>
+  <tr><td><code>cat</code></td><td>La catégorie, qui décide de la façon de frapper : <code>"epee"</code> (combo de 3 coups), <code>"fouet"</code> (2 coups longs), <code>"lourde"</code> (1 grand coup lent), <code>"distance"</code> (tirs, avec <code>forme</code> <code>"arc"</code> ou <code>"baton"</code>).</td></tr>
+  <tr><td><code>degats</code> / <code>gain</code></td><td>Dégâts au niveau 1, puis dégâts en plus à chaque niveau.</td></tr>
+  <tr><td><code>poids</code></td><td>Compte dans la charge de Nexi.</td></tr>
+  <tr><td><code>vitesse</code> / <code>portee</code></td><td>Multiplicateurs (1 = normal).</td></tr>
+  <tr><td><code>element</code> / <code>effet</code></td><td>Feu ou foudre intégrés ; effet spécial déjà codé (<code>"parefeu"</code>, <code>"chaine"</code>, <code>"onde"</code>, <code>"minage"</code>…).</td></tr>
+  <tr><td><code>corrompue: true</code></td><td>Fait partie du set corrompu lâché par le Tyran.</td></tr>
+</table></div>
+
+<h3>LES ARMURES et LE POIDS</h3>
+<p>Chaque armure a une <code>piece</code> (casque, plastron, gantelets, bottes), une <code>defense</code> et un <code>poids</code>. Les dégâts reçus sont multipliés par <code>50 / (50 + défense)</code> : avec 50 de défense, Nexi prend moitié moins. La section <code>CHARGE</code> règle les seuils : jusqu'à 30 % de la charge max, Nexi est léger (+10 % de vitesse) ; au-delà de 70 %, il est lourd (−20 % de vitesse et d'attaque). Le set corrompu complet (4 armures + 1 arme corrompue) active une <b>synergie</b> selon le virus équipé (liste <code>SYNERGIES</code>).</p>
+
+<h3>LA MUSIQUE et LES BRUITAGES</h3>
+<pre>exploration: { tempo: <span class="v">116</span>, ondeMelodie: <span class="t">"square"</span>,
+  melodie: <span class="t">"E4 - - G4 - - B4 - A4 - G4 - F#4 - - - …"</span>,</pre>
+<p>Aucun fichier son : le navigateur fabrique les notes. Une note = une croche : <code>E4</code> = mi de l'octave 4, <code>F#4</code> = fa dièse, <code>-</code> tient la note, <code>.</code> = silence. Batterie : <code>k</code> grosse caisse, <code>s</code> caisse claire, <code>h</code> charleston. <code>tempo</code> = vitesse en battements par minute. Dans <code>BRUITAGES</code>, <code>de</code> et <code>a</code> sont les fréquences de départ et d'arrivée d'un son (en hertz).</p>
+
+<h3>LES PIÈGES et LE MONDE</h3>
+<p><code>PIEGES</code> règle la chance d'avoir des pièges dans une salle et la force de chaque type : la mine (<code>explosif</code>), la grille de flammes (<code>brulant</code>) et l'arc électrique (<code>foudroyant</code>), avec leurs temps <code>actif</code> et <code>repos</code>. <code>MONDE.GRAVITE: 540</code> : la force qui ramène Nexi au sol (essaie 200 pour la Lune). <code>LARGEUR_SALLE: 560</code> : la longueur des salles en pixels.</p>
+
+<!-- ============================================================== -->
+<h2 id="apparence">7. Dessins, couleurs et animations</h2>
+<h3>Le pantin de Nexi : les poses</h3>
+<pre>leger2: { brasB: <span class="v">160</span>, brasF: <span class="v">5</span>, jambeB: <span class="v">125</span>, jambeF: <span class="v">50</span>, epee: <span class="v">0</span>, dx: <span class="v">1</span>, yeux: <span class="t">"plisses"</span> },</pre>
+<p>Nexi est un pantin : chaque pose donne l'angle (en degrés) de ses bras, jambes et de son arme. 0 = vers la droite, 90 = vers le bas, -90 = vers le haut. <code>dx</code>/<code>dy</code> décalent le corps, <code>yeux: "plisses"</code> plisse les yeux. Change un angle de la pose <code>repos1</code> et Nexi se tient autrement. Le dessin à partir de ces angles est fait par la fonction <code>rendrePose</code>.</p>
+
+<h3>Les palettes et les sprites en lettres</h3>
+<pre><span class="k">const</span> PAL_ZOMBIE = { L:<span class="t">"#e4dcff"</span>, l:<span class="t">"#a796e0"</span>, d:<span class="t">"#6a58a8"</span>, D:<span class="t">"#0c0716"</span>, E:<span class="t">"#FF5E7A"</span>, … };
+<span class="k">const</span> ZOMBIE = [<span class="t">".........LLLL........."</span>, <span class="t">".......LLllllLL......."</span>, …</pre>
+<p>Les petits ennemis sont dessinés en <b>texte</b> : chaque chaîne est une ligne de pixels, chaque lettre une couleur de la palette, le point <code>.</code> un pixel transparent. Change <code>E:"#FF5E7A"</code> (les yeux du zombie) en <code>"#3DF5C4"</code> et ses yeux deviennent verts. Un contour sombre est ajouté automatiquement.</p>
+
+<h3>Les boss : des formes géométriques</h3>
+<p>Les boss sont trop grands pour être dessinés lettre par lettre : ils sont construits avec des formes (<code>rect</code>, <code>ellipse</code>, <code>capsule</code>, <code>poly</code>) et des matériaux à 3 tons. La fonction <code>rendreFormes</code> transforme ces formes en pixels, avec ombres et contour automatiques. Les tailles de chaque boss sont dans <code>TAILLES_BOSS</code>.</p>
+
+<!-- ============================================================== -->
+<h2 id="moteur">8. Le moteur du jeu</h2>
+<p>Pour ceux qui veulent comprendre comment le jeu fonctionne vraiment.</p>
+<h3>La boucle de jeu : 60 fois par seconde</h3>
+<div class="schema">boucle()  ── appelée environ 60 fois par seconde par le navigateur
+  └─ image()
+       ├─ lireTouches()   quelles touches / quels boutons sont appuyés ?
+       ├─ maj(dt)         faire avancer le monde de dt secondes (≈ 0,016)
+       │    ├─ majJoueur     déplacements, sauts, attaques de Nexi
+       │    ├─ majEnnemi     chaque ennemi bouge et attaque  (majBoss pour les boss)
+       │    ├─ tirs, pièges, butin, Terminal, porte…
+       └─ dessiner()      redessiner toute l'image : décor, ennemis, Nexi, HUD</div>
+<p><code>dt</code> (« delta temps ») est le temps écoulé depuis l'image précédente. Tout ce qui bouge est multiplié par <code>dt</code> : <code>e.x += e.dir * 130 * dt</code> veut dire « avancer de 130 pixels par seconde », quelle que soit la vitesse de l'ordinateur.</p>
+
+<h3>Les états du jeu</h3>
+<p>La variable <code>etat</code> dit où on en est : <code>"titre"</code>, <code>"histoire"</code>, <code>"jeu"</code>, <code>"menu"</code> (pause, Terminal, inventaire…), <code>"choixSalle"</code> (mode démo), <code>"ko"</code>, <code>"victoire"</code>. Le monde n'avance que quand <code>etat === "jeu"</code> : c'est ce qui met le jeu en pause dans les menus.</p>
+
+<h3>Les salles</h3>
+<p><code>infoSalle(n)</code> calcule ce qu'est la salle numéro <code>n</code> (normale, Terminal, mini-boss, Tyran, sanctuaire) en rejouant les cycles depuis le début. <code>chargerSalle(n)</code> vide la salle précédente et crée la nouvelle : ennemis (<code>compositionSalle</code>), coffre, pièges, boss. <code>salleSuivante()</code> est appelée quand Nexi passe la porte : elle tire un bonus ou un malus puis charge la salle.</p>
+
+<h3>Le combat</h3>
+<pre><span class="k">function</span> infligerDegats(e, dmg, fort, discret, source) {
+  …
+  dmg *= <span class="v">1</span> - e.defense;
+  <span class="k">if</span> (e.vulnerable &gt; <span class="v">0</span>) dmg *= <span class="v">2</span>;
+  …
+  e.pv -= dmg;</pre>
+<p>Quand l'arme de Nexi touche un ennemi, <code>toucherAvecArme</code> vérifie les cas spéciaux (Spectres, boss 404, effets d'arme) puis appelle <code>infligerDegats</code>, qui retire les PV en tenant compte de la défense et des faiblesses. Les dégâts de l'arme viennent de <code>degatsArme</code> : niveau de l'arme × réglages Débutant × points de niveau × bonus. Dans l'autre sens, <code>blesserJoueur</code> blesse Nexi, en tenant compte de son armure.</p>
+
+<h3>Les boss : des attaques au choix</h3>
+<pre>troie: [<span class="t">"ruee"</span>, <span class="t">"martelage"</span>, <span class="t">"ventre"</span>],</pre>
+<p><code>KITS</code> donne la liste des attaques de chaque boss ; le boss en pioche une, l'exécute, fait une pause, puis recommence. Chaque attaque est une fonction de <code>ATTAQUES</code>, appelée à chaque image tant qu'elle n'est pas finie (elle renvoie <code>true</code> quand elle a terminé). Par exemple, la ruée du Cheval de Troie : il gratte le sol 0,9 seconde (un « ! » apparaît), puis fonce à 130 pixels par seconde jusqu'au mur.</p>
+
+<h3>Équipement, Terminal et menus</h3>
+<p>Un objet est une petite fiche <code>{ id, type, niv }</code> (et parfois <code>element</code>). <code>equiper</code> le place sur Nexi et range l'ancien dans le sac. Tous les menus (pause, Terminal, inventaire, réglages) passent par <code>ouvrirMenu</code>, qui reçoit un titre et une liste de lignes : chaque ligne a un texte et une <code>action</code> (la fonction lancée quand on la choisit).</p>
+
+<h3>La sauvegarde</h3>
+<p>Au Terminal, <code>instantane()</code> prend une « photo » de la partie, <code>encoderSauvegarde()</code> la transforme en code <code>NEXI-XXXX-…</code>, rangé dans le navigateur (<code>localStorage</code>). En pleine descente, la partie n'est pas sauvegardée : quitter compte comme une mort. Le même code peut s'afficher en QR code, se copier ou se télécharger.</p>
+
+<h3>Le son et l'affichage</h3>
+<p>La musique est jouée par <code>planifierMusique</code>, qui prépare les notes un peu en avance pour un rythme parfait ; <code>son("coup")</code> joue un bruitage. Côté image, tout est dessiné en basse résolution (environ 280 × 130 pixels) puis agrandi sans flou : c'est ce qui donne le style pixel art. <code>rect</code>, <code>px</code> et <code>texte</code> sont les trois fonctions de dessin de base.</p>
+
+<!-- ============================================================== -->
+<h2 id="recettes">9. Je veux… : les recettes</h2>
+<div class="tableau"><table>
+  <tr><th>Je veux…</th><th>Je vais où</th><th>Je fais quoi</th></tr>
+  <tr><td>un Nexi plus fort</td><td><code>JOUEUR</code></td><td>Monte <code>PV_MAX</code>, <code>DEGATS_LEGER</code>, baisse <code>COOLDOWN_LEGER</code>.</td></tr>
+  <tr><td>changer la couleur de Nexi</td><td><code>PAL_NEXI</code></td><td>Change <code>P</code>, <code>L</code> et <code>d</code> (couleur, version claire, version sombre).</td></tr>
+  <tr><td>changer la pose de Nexi au repos</td><td><code>POSES</code>, ligne <code>repos1</code></td><td>Change les angles <code>brasF</code> ou <code>epee</code> (de -180 à 180).</td></tr>
+  <tr><td>renommer un boss</td><td><code>NOMS_BOSS</code></td><td>Change le texte entre guillemets.</td></tr>
+  <tr><td>un boss plus dur</td><td><code>BOSS</code></td><td>Monte son <code>pv</code> ou ses <code>degats</code> ; <code>GAIN_PAR_CYCLE</code> pour tous.</td></tr>
+  <tr><td>voir le Tyran tout de suite</td><td><code>BOSS</code></td><td><code>ARCHONTE_TOUS_LES: 1</code> : le Tyran arrive en salle 7.</td></tr>
+  <tr><td>voir la fin du jeu</td><td><code>HISTOIRE</code> et <code>BOSS</code></td><td><code>RENCONTRES_AVANT_VER_ULTIME: 1</code> et <code>ARCHONTE_TOUS_LES: 1</code>.</td></tr>
+  <tr><td>créer une arme</td><td><code>ARMES</code></td><td>Copie la ligne <code>katana</code>, change le nom de la ligne (<code>monArme:</code>), le <code>nom</code> et les chiffres. Elle apparaîtra dans les coffres.</td></tr>
+  <tr><td>inventer un élément</td><td><code>EFFETS_ELEMENTS</code></td><td>Copie une ligne, renomme-la, choisis un <code>effet</code> et une <code>couleur</code>, puis écris son nom dans <code>ELEMENT</code>.</td></tr>
+  <tr><td>plus de coffres</td><td><code>LOOT</code></td><td><code>CHANCE_COFFRE: 1</code> = un coffre par salle.</td></tr>
+  <tr><td>moins de pièges</td><td><code>PIEGES</code></td><td><code>CHANCE_PAR_SALLE: 0</code> pour les supprimer.</td></tr>
+  <tr><td>un nouveau bonus de porte</td><td><code>LISTE_BONUS</code></td><td>Copie une ligne et adapte-la (mission 5).</td></tr>
+  <tr><td>que des bonus aux portes</td><td><code>PORTES</code></td><td><code>CHANCE_BONUS: 1</code>.</td></tr>
+  <tr><td>composer ma musique</td><td><code>MUSIQUE</code></td><td>Change <code>tempo</code> et les notes d'un thème (garde les espaces entre les notes).</td></tr>
+  <tr><td>changer le texte de mort</td><td><code>MESSAGE_KO</code></td><td>Remplace <code>"SYSTEM FAILURE"</code>.</td></tr>
+  <tr><td>sauter comme sur la Lune</td><td><code>MONDE</code></td><td><code>GRAVITE: 200</code>.</td></tr>
+  <tr><td>des ennemis d'un seul type</td><td><code>PROGRESSION</code></td><td>Laisse un seul nom dans <code>PETITS</code>, par exemple <code>["ver"]</code>.</td></tr>
+</table></div>
+
+<!-- ============================================================== -->
+<h2 id="pannes">10. Ça ne marche plus ?</h2>
+<p>Pas de panique : une faute de frappe arrête le jeu, mais l'atelier te dit où elle est. Le message rouge indique une ligne : la faute est sur cette ligne <b>ou juste au-dessus</b>.</p>
+<div class="tableau"><table>
+  <tr><th>Message (en anglais)</th><th>Ce qui se passe</th><th>La solution</th></tr>
+  <tr><td><code>Unexpected identifier</code></td><td>Il manque une virgule à la fin de la ligne d'au-dessus.</td><td>Ajoute <code>,</code> après la valeur.</td></tr>
+  <tr><td><code>Unexpected token</code></td><td>Un caractère en trop ou une parenthèse, accolade ou guillemet mal fermé.</td><td>Vérifie que chaque <code>{</code> a son <code>}</code>, chaque <code>"</code> son partenaire.</td></tr>
+  <tr><td><code>Invalid or unexpected token</code></td><td>Un guillemet ouvert jamais fermé.</td><td>Ferme le texte : <code>"Bourrin 3000"</code>.</td></tr>
+  <tr><td><code>… is not defined</code></td><td>Un mot sans guillemets que le jeu ne connaît pas (<code>feu</code> au lieu de <code>"feu"</code>).</td><td>Ajoute les guillemets, ou corrige l'orthographe.</td></tr>
+  <tr><td>Aucune erreur, mais rien ne change</td><td>As-tu cliqué sur ▶ LANCER ? La valeur est-elle bien dans la liste des choix ?</td><td>Relance, et relis le commentaire au-dessus du réglage.</td></tr>
+  <tr><td>Écran noir</td><td>Une valeur extrême (vitesse 999 999, taille négative…).</td><td>Reviens à une valeur raisonnable, ou « Nouveau visiteur ».</td></tr>
+</table></div>
+<div class="encadre attention"><b>À ÉVITER</b><br>La virgule décimale française : <code>0,5</code> casse la ligne, écris <code>0.5</code>. Et ne supprime pas les lignes qui commencent par <code>function</code> : ce sont les recettes du jeu.</div>
+
+<!-- ============================================================== -->
+<h2 id="glossaire" class="suite">11. Petit glossaire</h2>
+<div class="tableau"><table>
+  <tr><td><b>Variable / constante</b></td><td>Un nom qui retient une valeur (<code>let</code> si elle change, <code>const</code> sinon).</td></tr>
+  <tr><td><b>Objet</b></td><td>Une fiche <code>{ nom: valeur, … }</code>.</td></tr>
+  <tr><td><b>Tableau</b></td><td>Une liste <code>[ a, b, c ]</code>.</td></tr>
+  <tr><td><b>Fonction</b></td><td>Une recette nommée qu'on peut appeler : <code>mourir()</code>.</td></tr>
+  <tr><td><b>Booléen</b></td><td><code>true</code> ou <code>false</code>.</td></tr>
+  <tr><td><b>Sprite</b></td><td>Une petite image d'un personnage.</td></tr>
+  <tr><td><b>Hitbox</b></td><td>La zone invisible qui compte pour les coups.</td></tr>
+  <tr><td><b>Cooldown</b></td><td>Le temps d'attente avant de pouvoir refaire une action.</td></tr>
+  <tr><td><b>dt</b></td><td>Le temps écoulé depuis l'image précédente.</td></tr>
+  <tr><td><b>Canvas</b></td><td>La zone de la page où le jeu dessine.</td></tr>
+  <tr><td><b>localStorage</b></td><td>La petite mémoire du navigateur, où est rangée la sauvegarde.</td></tr>
+</table></div>
+<p class="meta">Guide de Nexi : Infection — version 0.9.6 bêta. Le jeu ne collecte aucune donnée.</p>
+</div>
+</body>
+</html>

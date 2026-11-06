@@ -8,6 +8,7 @@ Jeu d'action 2D en pixel art, jouable dans le navigateur (PC et téléphone), cr
 
 - **Version stable** (branche `main`) : https://yohanlassabliere-ash.github.io/Nexi-infection/
 - **Version de test** (branche `dev`) : https://yohanlassabliere-ash.github.io/Nexi-infection/dev/
+- **Démo du stand** (branche `main`, choix de la salle à chaque porte) : https://yohanlassabliere-ash.github.io/Nexi-infection/demo/
 
 Commandes sur PC : flèches ou ZQSD, Espace (saut), J (attaque), K (compétence), Échap (pause). Sur téléphone : les boutons à l'écran.
 
@@ -16,6 +17,8 @@ Commandes sur PC : flèches ou ZQSD, Espace (saut), J (attaque), K (compétence)
 Tout le jeu tient dans un seul fichier : `index.html`. Ouvre-le dans un éditeur de texte, change une valeur dans la partie `★ DÉBUTANT` (en haut du fichier), enregistre, recharge la page : c'est tout.
 
 Le jeu ne collecte aucune donnée : la sauvegarde reste dans le navigateur du joueur.
+
+- **Guide du code** : https://yohanlassabliere-ash.github.io/Nexi-infection/guide/ (PDF : `guide/guide_nexi_infection.pdf`)
 
 ## L'atelier (modifier le code et jouer à sa version)
 
