@@ -159,12 +159,15 @@ const SOUS_TITRE_KO = "Nexi a été corrompu.";
 // nom (avant les deux-points), choisis son « effet » et sa couleur, puis
 // écris ce nom dans  const ELEMENT = "...";  tout en haut du fichier.
 //
-// Les 5 effets que le moteur sait faire, et leurs réglages :
+// Les 6 effets que le moteur sait faire, et leurs réglages :
 //   "brulure"   → degatsParSec, duree         (dégâts continus)
 //   "cumul"     → degatsParSec, duree, cumulMax (chaque coup ajoute une dose)
 //   "paralysie" → coupsPourParalyser, dureeParalysie, degatsBonus
 //   "ralentir"  → force (0.5 = moitié moins vite, max 0.9), duree
 //   "volDeVie"  → part (0.15 = Nexi récupère 15 % des dégâts infligés)
+//   "flaque"    → degatsParSec, force, duree, largeur
+//                 (chaque coup laisse une flaque au sol : les ennemis qui marchent
+//                  dedans brûlent et sont ralentis ; duree = vie de la flaque)
 // couleur  = couleur de l'élément à l'écran (code hexadécimal)
 // magique  = true → l'attaque légère blesse aussi les Spectres
 // spectresImmunises = true → les Spectres ignorent cet élément
@@ -174,6 +177,7 @@ const EFFETS_ELEMENTS = {
   foudre:  { effet: "paralysie", couleur: "#FFE14D", magique: true, coupsPourParalyser: 3, dureeParalysie: 1.5, degatsBonus: 3 },
   glace:   { effet: "ralentir",  couleur: "#9fe8ff", magique: true, force: 0.5, duree: 3 },
   vampire: { effet: "volDeVie",  couleur: "#c9b0ff", part: 0.15 },
+  lave:    { effet: "flaque",    couleur: "#ff5a1f", magique: true, degatsParSec: 8, force: 0.4, duree: 4, largeur: 30 },
 };
 
 
@@ -232,6 +236,11 @@ const LOOT = {
 // apparitionDes = première salle où l'ennemi peut apparaître
 // poids         = plus il est grand, plus l'ennemi est fréquent
 // vitesse       = en pixels par seconde
+// Options pour inventer un ennemi (voir le guide, « recettes pas à pas ») :
+//   comme: "ver"   → il se comporte, se dessine et a la taille d'un ennemi existant
+//   teinte: 180    → décale ses couleurs (en degrés, de 0 à 360 : 180 = couleurs opposées)
+//   dessin: [...], palette: {...} → son propre dessin en lettres (dessin2 = 2e image de l'animation)
+// N'oublie pas d'ajouter son nom dans PETITS ou GROS (PROGRESSION, juste en dessous).
 const BESTIAIRE = {
   ver:      { nom: "Ver informatique",  pv: 18, degats: 10, vitesse: 30, apparitionDes: 1, poids: 3 },
   glitch:   { nom: "Glitch volant",     pv: 16, degats: 9,  vitesse: 30, apparitionDes: 1, poids: 2 },
@@ -272,6 +281,9 @@ const PROGRESSION = {
 // ==================================================================
 // Une salle de mini-boss termine chaque cycle. Tous les 2 cycles,
 // le Rootkit Archonte attend dans la salle suivante.
+// Pour inventer un mini-boss : ajoute une ligne avec  comme: "troie"  (il reprend les
+// attaques, le dessin et le virus de ce boss), une  teinte  et un  titre, puis ajoute
+// son nom dans ORDRE. Exemple dans le guide (« recettes pas à pas »).
 const BOSS = {
   ORDRE: ["troie", "botnet", "zombie", "e404", "kernel"], // ordre au premier tour, ensuite au hasard
   ARCHONTE_TOUS_LES: 2,     // l'Archonte apparaît tous les 2 cycles
@@ -865,7 +877,7 @@ let calqueLoin, calqueProche, images = {};
 let etat = "titre", temps = 0, tKo = 0;
 let J = null, salle = 1, tues = 0, record = 1;
 let plateformes = [], bougies = [], porte = null;
-let ennemis = [], projectiles = [], projAllies = [], pieges = [], fioles = [], piegesSalle = [];
+let ennemis = [], projectiles = [], projAllies = [], pieges = [], fioles = [], piegesSalle = [], flaques = [];
 let particules = [], textes = [], explosions = [], eclairs = [];
 let effets = [], gardien = null, banniere = null, ondes = [];
 let camX = 0, secousse = 0, tFoudreAuto = 2;
@@ -1097,6 +1109,10 @@ function preparerSprites() {
   ajouter("parasite1", PARASITE, PAL_PARASITE);
   ajouter("parasite2", PARASITE.map(r => r.replace(/r/g, "x").replace(/R/g, "r").replace(/x/g, "R")), PAL_PARASITE);
   ajouter("gardien", GARDIEN, PAL_GARDIEN);
+  for (const nom in BESTIAIRE) { // les ennemis inventés qui ont leur propre dessin
+    const d = BESTIAIRE[nom];
+    if (d.dessin) { ajouter(nom + "1", d.dessin, d.palette || PAL_VER); ajouter(nom + "2", d.dessin2 || d.dessin, d.palette || PAL_VER); }
+  }
   preparerSpritesBoss();
   const icone = (nom, grille) => { images[nom] = grilleVersCanvas(avecContour(grille), PAL_ICONES); };
   icone("ic_epee", ICONE_EPEE); icone("ic_bouclier", ICONE_BOUCLIER); icone("ic_saut", ICONE_SAUT);
@@ -1304,7 +1320,7 @@ function chargerSalle(n) {
   if (porte) porte.ouverte = false;
   genererDecor(n);
   porte.ouverte = false;
-  ennemis = []; projectiles = []; projAllies = []; pieges = []; fioles = []; piegesSalle = [];
+  ennemis = []; projectiles = []; projAllies = []; pieges = []; fioles = []; piegesSalle = []; flaques = [];
   explosions = []; eclairs = []; textes = []; ondes = [];
   ondesSol = []; rayons = []; zones = []; trous = []; colonnes = []; capsules = []; allies = [];
   ecranBleuT = 0; gravSigne = 1;
@@ -1376,13 +1392,14 @@ function creerEnnemi(type, x, n) {
   return finirEnnemiElementaire(nouvelEnnemi(type, d, x, n, f, fDeg, pv));
 }
 function nouvelEnnemi(type, d, x, n, f, fDeg, pv) {
-  const [w, h] = TAILLES[type];
+  const modele = d.comme && BESTIAIRE[d.comme] ? d.comme : type;   // l'ennemi qu'il imite (lui-même par défaut)
+  const [w, h] = TAILLES[type] || (d.dessin ? [Math.max(...d.dessin.map(r => r.length)) - 2, d.dessin.length - 1] : TAILLES[modele]);
   let y = SOL - h;
-  if (type === "glitch") y = SOL - rnd(55, 70);
-  if (type === "drone") y = SOL - rnd(68, 78);
-  if (type === "parasite") y = SOL - 44;
+  if (modele === "glitch") y = SOL - rnd(55, 70);
+  if (modele === "drone") y = SOL - rnd(68, 78);
+  if (modele === "parasite") y = SOL - 44;
   return {
-    type, nom: d.nom, def: d, x, y, baseY: y, w, h,
+    type, modele, nom: d.nom, def: d, x, y, baseY: y, w, h,
     pv, pvMax: pv, degats: d.degats * MONSTRES.MULT_DEGATS * fDeg, vitesse: d.vitesse,
     spectre: !!d.spectre, defense: d.defense || 0,
     dir: -1, t: Math.random() * 3, minuteur: rnd(0.8, 2.2), etat: "normal",
@@ -1450,9 +1467,43 @@ function appliquerElementType(e, el, dmg = 0) {
     if (e.jauge >= e.jaugeMax) { e.jauge = 0; e.paralyse = e.boss ? 0.6 : (F.dureeParalysie || 1); nombre(e.x + e.w / 2, e.y - 10, "PARALYSÉ", coul); }
   } else if (F.effet === "ralentir") {
     e.ralenti = F.duree || 3; e.ralentiForce = Math.max(0, Math.min(0.9, F.force || 0.5)); e.ralentiCoul = coul;
+  } else if (F.effet === "flaque") {
+    poserFlaque(e.x + e.w / 2, F, coul);
   } else if (F.effet === "volDeVie") {
     J.vol = (J.vol || 0) + dmg * (F.part || 0);
     if (J.vol >= 1) { const soin = Math.floor(J.vol); J.vol -= soin; J.pv = Math.min(J.pvMax, J.pv + soin); nombre(J.x + J.w / 2, J.y - 8, "+" + soin, coul); }
+  }
+}
+
+// ---------- Effet « flaque » : une nappe au sol (la lave, par exemple) ----------
+// Elle reste « duree » secondes ; un ennemi qui a les pieds dedans brûle et ralentit.
+// Un nouveau coup au même endroit ravive la flaque au lieu d'en poser une autre.
+function poserFlaque(cx, F, coul) {
+  const w = F.largeur || 30, vie = F.duree || 4;
+  const proche = flaques.find(f => Math.abs(f.x + f.w / 2 - cx) < w * 0.6);
+  if (proche) { proche.vie = Math.max(proche.vie, vie); return; }
+  if (flaques.length >= 8) flaques.shift();   // pas plus de 8 flaques à la fois
+  flaques.push({ x: clamp(cx - w / 2, 0, MONDE.LARGEUR_SALLE - w), w, vie, vieMax: vie, F, coul });
+}
+function majFlaques(dt) {
+  for (const f of flaques) {
+    f.vie -= dt;
+    for (const e of ennemis) {
+      if (e.mort || e.y + e.h < SOL - 3 || e.x + e.w < f.x || e.x > f.x + f.w) continue;   // il faut avoir les pieds dedans
+      e.brulure = Math.max(e.brulure, 0.6); e.brulureDps = f.F.degatsParSec || 0; e.brulureCoul = f.coul;
+      if (f.F.force) { e.ralenti = Math.max(e.ralenti || 0, 0.3); e.ralentiForce = Math.max(0, Math.min(0.9, f.F.force)); e.ralentiCoul = f.coul; }
+    }
+    if (Math.random() < dt * 6) particule(f.x + rnd(2, f.w - 2), SOL - 2, rnd(-6, 6), rnd(-50, -20), Math.random() < 0.5 ? f.coul : "#ffd84d", 0.5);
+  }
+  flaques = flaques.filter(f => f.vie > 0);
+}
+function dessinerFlaques(ox, oy) {
+  for (const f of flaques) {
+    const fin = Math.min(1, f.vie / 0.8);   // la flaque rétrécit quand elle s'éteint
+    const w = Math.round(f.w * fin), x = Math.round(f.x + (f.w - w) / 2 - ox), y = SOL - 3 - oy;
+    if (w < 2) continue;
+    rect(x + 1, y, w - 2, 1, f.coul); rect(x, y + 1, w, 2, f.coul);
+    for (let i = 0; i < w; i += 5) if (Math.floor(temps * 4 + i) % 3 === 0) px(x + i + 1, y + 1, "#ffd84d");   // bulles
   }
 }
 
@@ -1543,7 +1594,7 @@ function majEnnemi(e, dt) {
   if (e.retourne > 0) { majRetourne(e, dt); return; }
   const jc = cibleX(), ec = e.x + e.w / 2, dx = jc - ec, dist = Math.abs(dx);
 
-  switch (e.type) {
+  switch (e.modele) {
     case "bot": { // tourne autour de Nexi, puis fonce sur lui
       e.chrono -= dt;
       if (e.etat === "normal") {
@@ -1654,7 +1705,7 @@ function majEnnemi(e, dt) {
   }
   e.x = clamp(e.x, 0, MONDE.LARGEUR_SALLE - e.w);
   if (e.element && Math.random() < 0.35) particule(e.x + rnd(0, e.w), e.y + rnd(0, e.h), rnd(-8, 8), rnd(-30, -10), e.element === "feu" ? (Math.random() < 0.5 ? "#ff8a3c" : "#ffd84d") : (Math.random() < 0.5 ? "#2af5ff" : "#ffffff"), 0.35);
-  if (e.type !== "parasite" && e.type !== "drone" && chevauche(e, corpsJoueur())) blesserJoueur(e.degats * (e.type === "trojan" ? 0.4 : 1), ec, e.element);
+  if (e.modele !== "parasite" && e.modele !== "drone" && chevauche(e, corpsJoueur())) blesserJoueur(e.degats * (e.modele === "trojan" ? 0.4 : 1), ec, e.element);
 }
 
 // ---------- Dégâts reçus par Nexi ----------
@@ -2361,7 +2412,7 @@ function majRetourne(e, dt) {
    ★★ CODEUR — ÉTAPE 4 : SAUVEGARDE (automatique, code, QR, fichier)
    Tout reste sur le téléphone du joueur : aucune donnée n'est envoyée.
    ================================================================== */
-const VERSION = "V0.9.6 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
+const VERSION = "V0.9.7 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
 const CLE_SAUVEGARDE = "nexi_infection_sauvegarde";   // nom de la sauvegarde dans le navigateur
 const BASE32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";     // pas de I, L, O, U : on ne les confond pas
 let partieSauvee = null;                               // dernière photo de la partie en cours
@@ -3053,6 +3104,31 @@ function silhouette(src) {
   cx.drawImage(src, 0, 0); cx.globalCompositeOperation = "source-in"; cx.fillStyle = "#ffffff"; cx.fillRect(0, 0, c.width, c.height);
   return c;
 }
+// Décale les couleurs d'une image (option « teinte » des ennemis et des boss), une seule fois puis gardée en mémoire
+function imageTeintee(nom, degres) {
+  const im = images[nom];
+  if (!degres || !im) return im;
+  const cle = nom + "~" + degres;
+  if (!images[cle]) {
+    const a = degres * Math.PI / 180, co = Math.cos(a), si = Math.sin(a);
+    const M = [0.213 + co * 0.787 - si * 0.213, 0.715 - co * 0.715 - si * 0.715, 0.072 - co * 0.072 + si * 0.928,
+               0.213 - co * 0.213 + si * 0.143, 0.715 + co * 0.285 + si * 0.140, 0.072 - co * 0.072 - si * 0.283,
+               0.213 - co * 0.213 - si * 0.787, 0.715 - co * 0.715 + si * 0.715, 0.072 + co * 0.928 + si * 0.072];
+    const teinter = (src) => {
+      const c = nouveauCanvas(src.width, src.height), cx = c.getContext("2d");
+      cx.drawImage(src, 0, 0);
+      const data = cx.getImageData(0, 0, c.width, c.height), px4 = data.data;
+      for (let i = 0; i < px4.length; i += 4) {
+        const r = px4[i], v = px4[i + 1], b = px4[i + 2];
+        px4[i] = r * M[0] + v * M[1] + b * M[2]; px4[i + 1] = r * M[3] + v * M[4] + b * M[5]; px4[i + 2] = r * M[6] + v * M[7] + b * M[8];
+      }
+      cx.putImageData(data, 0, 0);
+      return c;
+    };
+    images[cle] = { d: teinter(im.d), g: teinter(im.g), bd: im.bd, bg: im.bg };
+  }
+  return images[cle];
+}
 function ajouterImage(nom, c) { const b = silhouette(c); images[nom] = { d: c, g: miroir(c), bd: b, bg: miroir(b) }; }
 
 function preparerSpritesBoss() {
@@ -3103,16 +3179,18 @@ function bossDeLaSalle(info) {
 function entite(o) {
   return Object.assign({ x: 0, y: 0, baseY: 0, dir: -1, t: Math.random() * 3, minuteur: 1, etat: "normal", vx: 0, vy: 0, chrono: 0, charge: 0,
     aFrappe: false, flash: 0, brulure: 0, poison: { doses: 0, t: 0 }, jauge: 0, paralyse: 0, tickDot: 0, immuTxt: 0, mort: false,
-    defense: 0, spectre: false, vitesse: 0, pvMax: o.pv, immunite: 0 }, o);
+    defense: 0, spectre: false, vitesse: 0, pvMax: o.pv, immunite: 0, modele: o.type }, o);
 }
 const TAILLES_BOSS = { troie: [48, 50], botnet: [42, 66], zombie: [36, 54], e404: [36, 46], kernel: [52, 58], archonte: [44, 86] };
+const nomBoss = (id) => NOMS_BOSS[id] || (BOSS[id] && BOSS[id].nom) || id;
 function creerBoss(id, cycle) {
-  const d = BOSS[id], [w, h] = TAILLES_BOSS[id];
+  const d = BOSS[id], modele = d.comme && BOSS[d.comme] ? d.comme : id;   // un boss inventé reprend tout d'un boss existant
+  const [w, h] = TAILLES_BOSS[modele];
   const k = Math.pow(1 + BOSS.GAIN_PAR_CYCLE, cycle), kDeg = Math.pow(1 + BOSS.DEGATS_PAR_CYCLE, cycle);   // croissance exponentielle
-  const e = entite({ type: "boss", boss: id, nom: NOMS_BOSS[id] || d.nom, w, h, pv: d.pv * k * MONSTRES.MULT_PV, degats: d.degats * kDeg * MONSTRES.MULT_DEGATS });
-  e.x = MONDE.LARGEUR_SALLE - 160; e.y = e.baseY = SOL - h - (id === "e404" ? 12 : 0);
+  const e = entite({ type: "boss", boss: modele, bossId: id, teinte: d.teinte, nom: nomBoss(id), w, h, pv: d.pv * k * MONSTRES.MULT_PV, degats: d.degats * kDeg * MONSTRES.MULT_DEGATS });
+  e.x = MONDE.LARGEUR_SALLE - 160; e.y = e.baseY = SOL - h - (modele === "e404" ? 12 : 0);
   e.etat = "pause"; e.chrono = 1.6; e.tA = 0; e.dernier = null;
-  e.spectre = id === "zombie"; e.revie = id === "zombie"; e.materialise = 0; e.vulnerable = 0;
+  e.spectre = modele === "zombie"; e.revie = modele === "zombie"; e.materialise = 0; e.vulnerable = 0;
   return e;
 }
 function creerMinion(type, x) {
@@ -3519,7 +3597,7 @@ function cleBoss(e) {
   }
 }
 function dessinerBoss(e, ox, oy) {
-  const im = images[e.type === "faux404" ? "b_e404_1" : cleBoss(e)], blanc = e.flash > 0;
+  const im = imageTeintee(e.type === "faux404" ? "b_e404_1" : cleBoss(e), e.teinte), blanc = e.flash > 0;
   const symetrique = e.boss === "kernel" || e.boss === "e404" || e.type === "faux404"; // leur écran ne doit pas s'afficher à l'envers
   const src = e.dir > 0 || symetrique ? (blanc ? im.bd : im.d) : (blanc ? im.bg : im.g);
   const flotte = e.boss === "e404" || e.type === "faux404";
@@ -3786,7 +3864,7 @@ function dessinerCarteTitre() {
   g.globalAlpha = a;
   const y = SOL - 30, w = Math.min(VW - 40, largeurTexte(e.nom) * 2 + 30);
   for (let yy = y - 12; yy < y + 22; yy++) for (let xx = (yy % 2); xx < VW; xx += 2) px(xx, yy, "rgba(5,1,12,0.55)");
-  texteCentre(TITRES_BOSS[e.boss] || "", VW / 2, y - 9, "#c9b0ff", C.encre);
+  texteCentre(TITRES_BOSS[e.bossId] || (BOSS[e.bossId] && BOSS[e.bossId].titre) || "", VW / 2, y - 9, "#c9b0ff", C.encre);
   texteGrand(e.nom, VW / 2 + 1, y + 1, C.encre);
   texteGrand(e.nom, VW / 2, y, e.boss === "archonte" ? "#ff9aa9" : "#f2eeff");
   const lg = Math.round(w * Math.min(1, (t - 1.2) / 0.6));
@@ -3802,7 +3880,7 @@ function etiquetteSalle(n) {
   if (i.type === "sanctuaire") return { type: "ABYSSAL WORM", nom: "SANCTUAIRE", c: "#ffd84d" };
   if (i.type === "terminal") return { type: "TERMINAL", nom: "REPOS", c: C.menthe };
   if (i.type === "archonte") return { type: i.final ? "COMBAT FINAL" : "TYRAN", nom: NOMS_BOSS.archonte, c: C.corail };
-  if (i.type === "miniboss") return { type: "MINI-BOSS", nom: i.mini < BOSS.ORDRE.length ? NOMS_BOSS[BOSS.ORDRE[i.mini]] : "???", c: "#ffd84d" };
+  if (i.type === "miniboss") return { type: "MINI-BOSS", nom: i.mini < BOSS.ORDRE.length ? nomBoss(BOSS.ORDRE[i.mini]) : "???", c: "#ffd84d" };
   return { type: "SALLE", nom: compositionSalle(n).length + " ENNEMIS", c: "#c9b0ff" };
 }
 
@@ -3865,6 +3943,7 @@ function maj(dt) {
     }
   }
   projectiles = projectiles.filter(p => p.vie > 0 && p.x > -20 && p.x < MONDE.LARGEUR_SALLE + 20);
+  majFlaques(dt);
   for (const p of pieges) {
     p.vie -= dt;
     if (p.vie > 0 && !aEffetArmure("bypass") && chevauche(p, corpsJoueur())) { J.lent = 2.5; p.vie = 0; nombre(J.x + J.w / 2, J.y - 8, "RALENTI", C.corail); }
@@ -4141,7 +4220,8 @@ function coupEpee(ox, oy) {
 
 function cleSprite(e) {
   const f2 = (v) => Math.floor(e.t * v) % 2 ? "2" : "1";
-  switch (e.type) {
+  if (e.def && e.def.dessin) return e.type + f2(6);   // un ennemi inventé, avec son propre dessin
+  switch (e.modele) {
     case "ver": return "ver" + f2(6);
     case "glitch": return "glitch" + f2(e.etat === "pique" ? 4 : 8);
     case "script": return "script" + f2(5);
@@ -4156,11 +4236,11 @@ function cleSprite(e) {
 }
 function dessinerEnnemi(e, ox, oy) {
   if (e.boss || e.type === "faux404") { dessinerBoss(e, ox, oy); return; }
-  const im = images[cleSprite(e)], blanc = e.flash > 0;
+  const im = imageTeintee(cleSprite(e), e.def && e.def.teinte), blanc = e.flash > 0;
   const src = e.dir > 0 ? (blanc ? im.bd : im.d) : (blanc ? im.bg : im.g);
   const sx = Math.round(e.x + e.w / 2 - im.d.width / 2 - ox), sy = Math.round(e.y + e.h - im.d.height - oy);
-  if (e.type === "glitch") for (let i = 0; i < 6; i++) rect(sx + im.d.width / 2 - e.dir * (8 + i * 4) + (i % 2), sy + 4 + (i * 5) % 7, 2 + (i % 2), 1, i % 2 ? "#2af5ff" : "#ff2a6d");
-  if (e.type === "drone") {
+  if (e.modele === "glitch") for (let i = 0; i < 6; i++) rect(sx + im.d.width / 2 - e.dir * (8 + i * 4) + (i % 2), sy + 4 + (i * 5) % 7, 2 + (i % 2), 1, i % 2 ? "#2af5ff" : "#ff2a6d");
+  if (e.modele === "drone") {
     if (e.etat === "vise") for (let y = sy + im.d.height; y < SOL - oy; y += 2) px(sx + 7, y, C.corail);
     else if (e.etat === "tir") { rect(sx + 5, sy + im.d.height, 5, SOL - oy - sy - im.d.height, "rgba(255,94,122,0.9)"); rect(sx + 7, sy + im.d.height, 1, SOL - oy - sy - im.d.height, "#ffffff"); }
   }
@@ -4169,13 +4249,13 @@ function dessinerEnnemi(e, ox, oy) {
     for (let i = -e.w / 2 - 2; i <= e.w / 2 + 2; i++) if ((i + Math.floor(temps * 8)) % 3) px(cx + i, by, c);
     if (Math.floor(temps * 6 + e.t) % 2) { px(cx - e.w / 2 - 2, by - 3 - (Math.floor(temps * 9) % 6), c); px(cx + e.w / 2 + 2, by - 6 + (Math.floor(temps * 7) % 5), c); }
   }
-  if (e.type === "zombie") g.globalAlpha = 0.75 + 0.2 * Math.sin(e.t * 7);
+  if (e.modele === "zombie") g.globalAlpha = 0.75 + 0.2 * Math.sin(e.t * 7);
   if (e.type === "orphelin") g.globalAlpha = e.dormant > 0 ? 0.25 : 0.8;
-  if (e.type === "parasite") { g.strokeStyle = C.veine; g.lineWidth = 1; g.beginPath(); g.moveTo(sx + 4.5, sy + 8.5); g.lineTo(Math.round(J.x + J.w / 2 - ox) + 0.5, Math.round(J.y + 10 - oy) + 0.5); g.stroke(); }
+  if (e.modele === "parasite") { g.strokeStyle = C.veine; g.lineWidth = 1; g.beginPath(); g.moveTo(sx + 4.5, sy + 8.5); g.lineTo(Math.round(J.x + J.w / 2 - ox) + 0.5, Math.round(J.y + 10 - oy) + 0.5); g.stroke(); }
   g.drawImage(src, sx, sy);
   g.globalAlpha = 1;
-  if (e.type === "script" && e.charge > 0) rect(e.dir > 0 ? sx + im.d.width - 2 : sx + 1, sy + 14, 2, 2, "#ffd84d");
-  if (e.type === "trojan" && e.etat === "frappe") rect(e.dir > 0 ? sx + im.d.width - 4 : sx - 18, sy + 12, 22, 14, "rgba(255,216,77,0.45)");
+  if (e.modele === "script" && e.charge > 0) rect(e.dir > 0 ? sx + im.d.width - 2 : sx + 1, sy + 14, 2, 2, "#ffd84d");
+  if (e.modele === "trojan" && e.etat === "frappe") rect(e.dir > 0 ? sx + im.d.width - 4 : sx - 18, sy + 12, 22, 14, "rgba(255,216,77,0.45)");
   if (e.paralyse > 0 && Math.floor(temps * 12) % 2) rect(sx, sy, im.d.width, 1, COUL_ELEMENT.foudre);
   if (e.pv < e.pvMax) { rect(sx + im.d.width / 2 - 8, sy - 4, 16, 2, C.encre); rect(sx + im.d.width / 2 - 8, sy - 4, 16 * Math.max(0, e.pv / e.pvMax), 2, C.corail); }
   if (e.jauge > 0) rect(sx + im.d.width / 2 - 8, sy - 6, 16 * e.jauge / (e.jaugeMax || 3), 1, e.jaugeCoul || COUL_ELEMENT.aucun);
@@ -4297,6 +4377,7 @@ function dessiner() {
   dessinerRollback(ox, oy);
   dessinerButins(ox, oy);
   dessinerPiegesSalle(ox, oy);
+  dessinerFlaques(ox, oy);
   for (const p of pieges) {
     rect(p.x - ox, p.y - oy, p.w, p.h, Math.floor(temps * 6) % 2 ? C.corail : "#a83a5a");
     px(p.x + 2 - ox, p.y + 1 - oy, C.encre); px(p.x + 5 - ox, p.y + 1 - oy, C.encre);
