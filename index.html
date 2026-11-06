@@ -92,7 +92,7 @@ const MONSTRES = {
 // (pratique pour aller voir directement un boss ou le Tyran).
 // false = le jeu normal : on descend salle par salle.
 const MODE_DEMO = false;
-const VERSION = "V0.9.2 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
+const VERSION = "V0.9.3 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
 
 
 // ==================================================================
@@ -1327,7 +1327,7 @@ function salleSuivante(cible, malusForce) {
     couleur: estBonus ? C.menthe : C.corail, t: 3.2 };
   chargerSalle(salle);
   if (introBoss) { introBoss.banniere = banniere; banniere = null; }  // le bandeau attend la fin de l'entrée du boss
-  if (salleInfo.type === "terminal") banniere = { titre: "UN TERMINAL - POINT DE REPOS", sous: "Approche-toi pour soigner, monter en niveau et t'équiper", couleur: C.menthe, t: 4 };
+  if (salleInfo.type === "terminal") banniere = { titre: "TERMINAL - PARTIE SAUVEGARDÉE", sous: "Approche-toi pour soigner, monter en niveau et t'équiper", couleur: C.menthe, t: 4 };
   if (salleInfo.type === "sanctuaire") banniere = { titre: "LE SANCTUAIRE DU VER ULTIME", sous: "Le fond de l'Abysse... Une lueur pulse dans le noir.", couleur: "#ffd84d", t: 4 };
 }
 
@@ -2415,7 +2415,27 @@ function sauvegarder() {
 }
 function fragmentsGardes() { return Math.floor(J.fragments * PROGRESSION_NEXI.FRAGMENTS_GARDES_A_LA_MORT); }
 // Au Terminal : on photographie la partie (on reprendra ici)
-function photoEtSauvegarde() { if (J && J.pv > 0) { partieSauvee = instantane(); fragmentsReserve = fragmentsGardes(); sauvegarder(); } }
+function photoEtSauvegarde() {
+  if (!J || J.pv <= 0) return;
+  const nouvelle = !partieSauvee || partieSauvee.salle !== salle;
+  partieSauvee = instantane(); fragmentsReserve = fragmentsGardes(); sauvegarder();
+  sauvegardeVueT = 2.5;                                  // petite icône « sauvegardé » en haut à droite
+  if (nouvelle) nombre(J.x + J.w / 2, J.y - 18, "PARTIE SAUVEGARDÉE", C.menthe, 2);
+}
+let sauvegardeVueT = 0;
+function prochainTerminal() { for (let n = salle + 1; n < salle + 40; n++) if (infoSalle(n).type === "terminal") return n; return null; }
+function texteEtatSauvegarde() {
+  if (salleInfo.type === "terminal") return "PARTIE SAUVEGARDÉE À CE TERMINAL";
+  const t = prochainTerminal();
+  return t ? "PROCHAINE SAUVEGARDE : TERMINAL DE LA SALLE " + t : "PAS DE SAUVEGARDE EN DESCENTE";
+}
+function dessinerIconeSauvegarde() { // une disquette qui clignote quand le jeu vient de sauvegarder
+  if (sauvegardeVueT <= 0) return;
+  sauvegardeVueT -= 1 / 60;
+  if (Math.floor(sauvegardeVueT * 4) % 2 === 0) return;
+  const x = VW - 30, y = 4;
+  rect(x, y, 9, 9, C.encre); rect(x + 1, y + 1, 7, 7, C.menthe); rect(x + 2, y + 1, 5, 3, "#e8e2ff"); rect(x + 2, y + 5, 5, 3, "#0f3a36");
+}
 // En pleine descente : chaque choix compte. Si le jeu est quitté ou fermé maintenant,
 // la partie est perdue comme après une mort (on garde le coffre et 25 % des fragments).
 function marquerDescente() { partieSauvee = null; fragmentsReserve = fragmentsGardes(); sauvegarder(); }
@@ -2806,7 +2826,8 @@ function dessinerBoutonPause() {
 function surPause(lx, ly) { const z = zonePause(); return lx >= z.x - 4 && lx < z.x + z.w + 4 && ly >= z.y - 3 && ly < z.y + z.h + 4; }
 function menuPause() {
   ouvrirMenu({
-    titre: "PAUSE", couleur: "#c9b0ff", sous: "-" + profondeur(salle) + " M  -  NIVEAU " + J.niveau,
+    titre: "PAUSE", couleur: "#c9b0ff", sous: "SALLE " + salle + "  -" + profondeur(salle) + " M  -  NIVEAU " + J.niveau,
+    info: texteEtatSauvegarde(),
     lignes: [
       { txt: "REPRENDRE", c: C.menthe, action: fermerMenu },
       { txt: "ÉQUIPEMENT", droite: CHARGE[niveauCharge()].nom, action: () => menuEquipement(menuPause), aide: "Ton arme et tes armures, et le poids que tu portes" },
@@ -4142,7 +4163,7 @@ function dessinerHUD() {
   if (setComplet()) { texte("SET CORROMPU : " + SYNERGIES[J.virus || "aucun"].nom, 4, yh, C.corail, C.encre); yh += 8; }
   if (ELEMENT_ACTIF !== "aucun") { texte(ELEMENT_ACTIF, 4, yh, COUL_ELEMENT[ELEMENT_ACTIF], C.encre); yh += 8; }
   if (J.virus) texte("VIRUS : " + VIRUS[J.virus].nom, 4, yh, "#c9b0ff", C.encre);
-  if (etat === "jeu") dessinerBoutonPause();
+  if (etat === "jeu") { dessinerBoutonPause(); dessinerIconeSauvegarde(); }
   let y = 17;
   for (const e of effets) {
     const t = e.def.nom + " " + (e.restant === Infinity ? "*" : e.restant);
@@ -4257,6 +4278,7 @@ function dessinerTitre() {
   if (Math.floor(temps * 2) % 2 === 0) texteCentre("TOUCHE L'ÉCRAN OU APPUIE SUR ENTRÉE POUR PLONGER", VW / 2, y + 34, C.menthe, C.encre);
   texteCentre("SUR PC : FLÈCHES OU ZQSD, ESPACE (SAUT)", VW / 2, y + 46, "#c9b0ff", C.encre);
   texteCentre("J (ATTAQUE), K (COMPÉTENCE), ÉCHAP (PAUSE)", VW / 2, y + 54, "#c9b0ff", C.encre);
+  texteCentre("LA PARTIE SE SAUVEGARDE AUX TERMINAUX (SALLES DE REPOS)", VW / 2, VH - 16, "#8b7fc0", C.encre);
   texteCentre("NEXA DIGITAL SCHOOL - CE JEU NE COLLECTE AUCUNE DONNÉE", VW / 2, VH - 8, "#6d6a9a");
   texte(VERSION, VW - 4 - largeurTexte(VERSION), 4, "#6d6a9a", C.encre);
   if (MODE_DEMO) texte("MODE DÉMO", VW - 4 - largeurTexte("MODE DÉMO"), 12, "#ffd84d", C.encre);
