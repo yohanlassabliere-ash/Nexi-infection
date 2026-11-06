@@ -81,7 +81,7 @@
   <li><a href="#codeur">Les données ★★ Codeur</a></li>
   <li><a href="#apparence">Dessins, couleurs et animations</a></li>
   <li><a href="#moteur">Le moteur du jeu</a></li>
-  <li><a href="#recettes">Je veux… : les recettes</a></li>
+  <li><a href="#recettes">Je veux… : les recettes</a> (lave, monstre, boss pas à pas)</li>
   <li><a href="#pannes">Ça ne marche plus ?</a></li>
   <li><a href="#glossaire">Petit glossaire</a></li>
 </ol>
@@ -179,9 +179,9 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
 
 <div class="mission"><h3>Mission 6 (bonus) — Invente ton propre élément</h3>
 <p>Dans <code>EFFETS_ELEMENTS</code>, copie la ligne <code>feu</code>, colle-la en dessous et transforme-la :</p>
-<pre>  lave: { effet: <span class="t">"brulure"</span>, couleur: <span class="t">"#ff3300"</span>, magique: <span class="v">true</span>, degatsParSec: <span class="v">20</span>, duree: <span class="v">5</span> },</pre>
-<p>Puis, tout en haut du fichier : <code>const ELEMENT = "lave";</code></p>
-<p><b>Ce que tu dois voir :</b> le nom « lave » en rouge sous la barre de vie, et des ennemis qui fondent. Si tu lis « ELEMENT INCONNU », les deux noms ne sont pas écrits pareil.<br><b>Tu as appris :</b> le nom d'une ligne sert d'identifiant ailleurs dans le code ; il faut l'écrire exactement pareil aux deux endroits.</p>
+<pre>  plasma: { effet: <span class="t">"brulure"</span>, couleur: <span class="t">"#ff3300"</span>, magique: <span class="v">true</span>, degatsParSec: <span class="v">20</span>, duree: <span class="v">5</span> },</pre>
+<p>Puis, tout en haut du fichier : <code>const ELEMENT = "plasma";</code></p>
+<p><b>Ce que tu dois voir :</b> le nom « plasma » en rouge sous la barre de vie, et des ennemis qui fondent. Si tu lis « ELEMENT INCONNU », les deux noms ne sont pas écrits pareil.<br><b>Tu as appris :</b> le nom d'une ligne sert d'identifiant ailleurs dans le code ; il faut l'écrire exactement pareil aux deux endroits.</p>
 <a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#~const%20EFFETS_ELEMENTS">Ouvrir EFFETS_ELEMENTS</a></div>
 
 <!-- ============================================================== -->
@@ -236,8 +236,21 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
   <tr><td><code>MULT_DEGATS: 1</code></td><td>Multiplie leurs dégâts (0.5 = partie tranquille).</td></tr>
   <tr><td><code>GAIN_PAR_SALLE: 0.045</code></td><td>À chaque salle, les ennemis deviennent 4,5 % plus forts. Ça se cumule : en salle 30, ils sont 3,6 fois plus forts.</td></tr>
   <tr><td><code>ENNEMIS_DEPART: 2</code> / <code>ENNEMIS_MAX: 9</code></td><td>Le nombre d'ennemis dans la 1re salle, et le maximum.</td></tr>
-  <tr><td><code>CHANCE_ELEMENTAIRE: 0.15</code></td><td>15 % des ennemis sont de feu ou de foudre (halo coloré), à partir de la salle 3.</td></tr>
+  <tr><td><code>CHANCE_ELEMENTAIRE: 0.15</code></td><td>15 % des ennemis sont élémentaires (halo de la couleur de l'élément), à partir de la salle 3.</td></tr>
+  <tr><td><code>ELEMENTS: ["feu", "foudre"]</code></td><td>Les éléments possibles pour ces ennemis : n'importe quel nom de <code>EFFETS_ELEMENTS</code> (<code>"poison"</code>, <code>"glace"</code>, <code>"lave"</code>, <code>"vampire"</code>…). Ils infligent leur effet à Nexi (voir juste en dessous).</td></tr>
 </table></div>
+
+<h3>LES ÉTATS SUBIS PAR NEXI</h3>
+<pre>feu: { apresCoups: <span class="v">1</span>, apresDegats: <span class="v">0</span>, degatsParSec: <span class="v">2.5</span>, duree: <span class="v">2.5</span> },   <span class="c">// Essaie apresCoups: 3</span></pre>
+<p>Les éléments marchent <b>dans les deux sens</b> : un ennemi « de glace » ralentit Nexi, un ennemi « de poison » l'empoisonne, un ennemi « de lave » pose une flaque sous ses pieds, un ennemi « vampire » se soigne en le frappant. L'effet est celui de la ligne de l'élément dans <code>EFFETS_ELEMENTS</code>. <code>ETATS_NEXI</code> règle, élément par élément, <b>quand</b> Nexi le subit :</p>
+<div class="tableau"><table>
+  <tr><td><code>apresCoups</code></td><td>L'état arrive au bout de X coups de cet élément (<code>1</code> = à chaque coup).</td></tr>
+  <tr><td><code>apresDegats</code></td><td>Ou au bout de X dégâts reçus de cet élément. Le premier des deux atteint déclenche l'état, puis le compteur repart de zéro.</td></tr>
+  <tr><td><code>0</code></td><td>Coupe ce compteur. <code>0</code> aux deux : Nexi n'a jamais cet état.</td></tr>
+  <tr><td>les autres réglages</td><td><code>degatsParSec</code>, <code>duree</code>, <code>force</code>… remplacent ceux de <code>EFFETS_ELEMENTS</code>, pour Nexi seulement (pour qu'un élément soit fort contre les ennemis et plus doux contre Nexi).</td></tr>
+</table></div>
+<p>Pour choisir quels éléments les ennemis peuvent avoir : <code>ELEMENTS</code> dans <code>MONSTRES</code>. Un élément inventé (comme l'acide de la recette A) marche aussi : ajoute son nom dans <code>ELEMENTS</code>, et il touchera Nexi à chaque coup avec ses propres réglages, sauf si tu lui ajoutes une ligne dans <code>ETATS_NEXI</code>.</p>
+<div class="encadre essaie"><b>ESSAIE</b><br>Des ennemis de glace et de poison partout : <code>CHANCE_ELEMENTAIRE: 1</code> et <code>ELEMENTS: ["glace", "poison"]</code>. Pour que Nexi ne brûle qu'après avoir encaissé 30 dégâts de feu : <code>feu: { apresCoups: 0, apresDegats: 30, … }</code>.</div>
 
 <h3>NOMS DES BOSS ET HISTOIRE</h3>
 <p><code>NOMS_BOSS</code> et <code>TITRES_BOSS</code> : les noms affichés en grand à l'arrivée de chaque boss. <code>HISTOIRE.RENCONTRES_AVANT_VER_ULTIME</code> : combien de fois on affronte le Tyran avant de trouver l'Abyssal Worm (mets 1 pour voir la fin plus vite).</p>
@@ -263,7 +276,7 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
 
 <h3 id="elements">LES ÉLÉMENTS</h3>
 <pre>glace: { effet: <span class="t">"ralentir"</span>, couleur: <span class="t">"#9fe8ff"</span>, magique: <span class="v">true</span>, force: <span class="v">0.5</span>, duree: <span class="v">3</span> },</pre>
-<p>Une ligne = un élément. Le nom avant les deux-points (<code>glace</code>) est celui à écrire dans <code>const ELEMENT = "glace";</code>. Chaque élément choisit un <code>effet</code> parmi les 5 que le moteur sait faire :</p>
+<p>Une ligne = un élément. Le nom avant les deux-points (<code>glace</code>) est celui à écrire dans <code>const ELEMENT = "glace";</code>. Chaque élément choisit un <code>effet</code> parmi les 6 que le moteur sait faire :</p>
 <div class="tableau"><table>
   <tr><th>effet</th><th>Ce qu'il fait</th><th>Ses réglages</th></tr>
   <tr><td><code>"brulure"</code></td><td>Dégâts continus pendant quelques secondes.</td><td><code>degatsParSec</code>, <code>duree</code></td></tr>
@@ -271,9 +284,13 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
   <tr><td><code>"paralysie"</code></td><td>Remplit une jauge ; pleine, l'ennemi est figé.</td><td><code>coupsPourParalyser</code>, <code>dureeParalysie</code>, <code>degatsBonus</code></td></tr>
   <tr><td><code>"ralentir"</code></td><td>L'ennemi bouge et attaque moins vite (deux fois moins fort sur les boss).</td><td><code>force</code> (0.5 = moitié moins vite, 0.9 au maximum), <code>duree</code></td></tr>
   <tr><td><code>"volDeVie"</code></td><td>Nexi récupère une part des dégâts qu'il inflige.</td><td><code>part</code> (0.15 = 15 %)</td></tr>
+  <tr><td><code>"flaque"</code></td><td>Chaque coup laisse une flaque au sol (la lave) : les ennemis dedans brûlent et ralentissent.</td><td><code>degatsParSec</code>, <code>force</code>, <code>duree</code> (vie de la flaque), <code>largeur</code></td></tr>
 </table></div>
+<p><b>Au bout de X coups ou X dégâts :</b> ajoute <code>apresCoups: 3</code> à une ligne et l'effet ne se déclenche qu'au 3e coup sur le même ennemi ; ou <code>apresDegats: 40</code> et il se déclenche quand l'ennemi a encaissé 40 dégâts. Une petite jauge de la couleur de l'élément se remplit au-dessus de l'ennemi, puis repart de zéro. Exemple, un feu qui n'enflamme qu'au 3e coup mais brûle fort :</p>
+<pre>feu: { effet: <span class="t">"brulure"</span>, couleur: <span class="t">"#ff8a3c"</span>, magique: <span class="v">true</span>, degatsParSec: <span class="v">15</span>, duree: <span class="v">3</span>, apresCoups: <span class="v">3</span> },</pre>
+<p>(La foudre a déjà son propre compteur : <code>coupsPourParalyser</code>.) Pour l'autre sens, quand un ennemi élémentaire touche Nexi, c'est <code>ETATS_NEXI</code> (section 5).</p>
 <p>Deux options de plus : <code>magique: true</code> permet de blesser les Spectres sans compétence, <code>spectresImmunises: true</code> rend les Spectres insensibles à l'élément. <code>couleur</code> colore le nom de l'élément, les particules et l'onde.</p>
-<div class="encadre essaie"><b>À TOI</b><br>Pour créer ton élément : copie une ligne, change le nom, l'effet, les chiffres et la couleur, puis écris ce nom dans <code>ELEMENT</code> (mission 6). Ajouter un 6e type d'effet demande d'écrire du code dans la fonction <code>appliquerElementType</code> : c'est un vrai défi de codeur.</div>
+<div class="encadre essaie"><b>À TOI</b><br>Pour créer ton élément : copie une ligne, change le nom, l'effet, les chiffres et la couleur, puis écris ce nom dans <code>ELEMENT</code> (mission 6). Ajouter un 7e type d'effet demande d'écrire du code dans la fonction <code>appliquerElementType</code> : c'est un vrai défi de codeur. La recette A (section 9) montre comment la flaque de lave a été ajoutée.</div>
 
 <h3>LES PORTES (bonus et malus)</h3>
 <pre>{ nom: <span class="t">"Surcharge offensive"</span>, desc: <span class="t">"Dégâts +20 %"</span>, duree: <span class="v">3</span>, mods: { degats: <span class="v">1.2</span> } },</pre>
@@ -284,13 +301,13 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
 
 <h3>BESTIAIRE</h3>
 <pre>ver: { nom: <span class="t">"Ver informatique"</span>, pv: <span class="v">18</span>, degats: <span class="v">10</span>, vitesse: <span class="v">30</span>, apparitionDes: <span class="v">1</span>, poids: <span class="v">3</span> },</pre>
-<p>Une ligne par ennemi. <code>apparitionDes</code> = première salle où il peut apparaître, <code>poids</code> = sa fréquence (plus grand = plus courant). <code>spectre: true</code> le rend résistant aux coups physiques, <code>defense: 0.5</code> lui fait perdre moitié moins de PV. Le comportement de chaque ennemi est codé dans la fonction <code>majEnnemi</code>.</p>
+<p>Une ligne par ennemi. <code>apparitionDes</code> = première salle où il peut apparaître, <code>poids</code> = sa fréquence (plus grand = plus courant). <code>spectre: true</code> le rend résistant aux coups physiques, <code>defense: 0.5</code> lui fait perdre moitié moins de PV. Le comportement de chaque ennemi est codé dans la fonction <code>majEnnemi</code>. <code>element: "glace"</code> rend cet ennemi toujours élémentaire. Pour inventer un ennemi : <code>comme</code> (copier un ennemi existant), <code>teinte</code> (changer ses couleurs), <code>dessin</code> et <code>palette</code> (son propre dessin). Voir la recette B, section 9.</p>
 
 <h3>PROGRESSION DES SALLES</h3>
 <p><code>PROGRESSION.CYCLE</code> décrit un cycle de 6 salles : on ajoute des petits ennemis, puis des gros, puis le mini-boss (<code>elite: true</code>). Juste avant chaque mini-boss, le jeu insère une salle de repos (Terminal). Chaque nouveau cycle recommence avec un ennemi de plus.</p>
 
 <h3>LES BOSS et LES VIRUS</h3>
-<p><code>BOSS</code> donne les PV et les dégâts de base de chaque boss. <code>GAIN_PAR_CYCLE: 0.55</code> : à chaque cycle, leurs PV sont multipliés par 1,55 (et leurs dégâts par 1,25). <code>ARCHONTE_TOUS_LES: 2</code> : le Tyran revient tous les 2 cycles. Chaque mini-boss vaincu lâche un <b>virus</b> (liste <code>VIRUS</code>) : une compétence qui remplace l'onde, avec son avantage (<code>effet</code>), son défaut (<code>contre</code>) et son temps de recharge.</p>
+<p><code>BOSS</code> donne les PV et les dégâts de base de chaque boss. <code>GAIN_PAR_CYCLE: 0.55</code> : à chaque cycle, leurs PV sont multipliés par 1,55 (et leurs dégâts par 1,25). <code>ARCHONTE_TOUS_LES: 2</code> : le Tyran revient tous les 2 cycles. Chaque mini-boss vaincu lâche un <b>virus</b> (liste <code>VIRUS</code>) : une compétence qui remplace l'onde, avec son avantage (<code>effet</code>), son défaut (<code>contre</code>) et son temps de recharge. Pour inventer un mini-boss à partir d'un boss existant : <code>comme</code>, <code>teinte</code> et <code>titre</code>, puis son nom dans <code>ORDRE</code> (recette C, section 9).</p>
 
 <h3>LES ARMES</h3>
 <pre>katana: { nom: <span class="t">"Katana Fibre"</span>, cat: <span class="t">"epee"</span>, poids: <span class="v">3</span>, degats: <span class="v">10</span>, gain: <span class="v">1.5</span>, portee: <span class="v">1.4</span>, desc: <span class="t">"Lame fine, portée plus longue"</span> },</pre>
@@ -383,6 +400,12 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
   <tr><td>voir la fin du jeu</td><td><code>HISTOIRE</code> et <code>BOSS</code></td><td><code>RENCONTRES_AVANT_VER_ULTIME: 1</code> et <code>ARCHONTE_TOUS_LES: 1</code>.</td></tr>
   <tr><td>créer une arme</td><td><code>ARMES</code></td><td>Copie la ligne <code>katana</code>, change le nom de la ligne (<code>monArme:</code>), le <code>nom</code> et les chiffres. Elle apparaîtra dans les coffres.</td></tr>
   <tr><td>inventer un élément</td><td><code>EFFETS_ELEMENTS</code></td><td>Copie une ligne, renomme-la, choisis un <code>effet</code> et une <code>couleur</code>, puis écris son nom dans <code>ELEMENT</code>.</td></tr>
+  <tr><td>de la lave au sol</td><td><code>ELEMENT</code></td><td><code>const ELEMENT = "lave";</code> (<a href="#pasapas">recette A</a>).</td></tr>
+  <tr><td>un nouveau monstre</td><td><code>BESTIAIRE</code> et <code>PETITS</code></td><td>Copie une ligne avec <code>comme</code> et <code>teinte</code> (<a href="#pasapas">recette B</a>).</td></tr>
+  <tr><td>un nouveau mini-boss</td><td><code>BOSS</code> et <code>ORDRE</code></td><td>Une ligne avec <code>comme: "troie"</code> (<a href="#pasapas">recette C</a>).</td></tr>
+  <tr><td>des ennemis de glace, poison, lave…</td><td><code>MONSTRES</code></td><td><code>ELEMENTS: ["glace", "poison", "lave"]</code> et monte <code>CHANCE_ELEMENTAIRE</code>.</td></tr>
+  <tr><td>que Nexi brûle moins souvent</td><td><code>ETATS_NEXI</code></td><td>Ligne <code>feu</code> : <code>apresCoups: 3</code> = brûlé au 3e coup de feu seulement.</td></tr>
+  <tr><td>un effet au bout de X coups</td><td><code>EFFETS_ELEMENTS</code></td><td>Ajoute <code>apresCoups: 3</code> (ou <code>apresDegats: 40</code>) à la ligne de l'élément.</td></tr>
   <tr><td>plus de coffres</td><td><code>LOOT</code></td><td><code>CHANCE_COFFRE: 1</code> = un coffre par salle.</td></tr>
   <tr><td>moins de pièges</td><td><code>PIEGES</code></td><td><code>CHANCE_PAR_SALLE: 0</code> pour les supprimer.</td></tr>
   <tr><td>un nouveau bonus de porte</td><td><code>LISTE_BONUS</code></td><td>Copie une ligne et adapte-la (mission 5).</td></tr>
@@ -392,6 +415,68 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
   <tr><td>sauter comme sur la Lune</td><td><code>MONDE</code></td><td><code>GRAVITE: 200</code>.</td></tr>
   <tr><td>des ennemis d'un seul type</td><td><code>PROGRESSION</code></td><td>Laisse un seul nom dans <code>PETITS</code>, par exemple <code>["ver"]</code>.</td></tr>
 </table></div>
+
+<h3 id="pasapas">Recettes pas à pas</h3>
+<p>Le tableau dit où aller. Ces recettes montrent le code complet, prêt à copier : on part toujours d'une ligne qui marche, on la copie, puis on la change.</p>
+
+<div class="mission"><h3>Recette A — De la lave qui reste au sol</h3>
+<p><b>Ce que tu vas obtenir :</b> chaque coup de Nexi laisse une flaque de lave par terre. Les ennemis qui marchent dedans brûlent et sont ralentis. Les ennemis volants passent au-dessus.</p>
+<p>La lave existe déjà dans <code>EFFETS_ELEMENTS</code> :</p>
+<pre>lave: { effet: <span class="t">"flaque"</span>, couleur: <span class="t">"#ff5a1f"</span>, magique: <span class="v">true</span>, degatsParSec: <span class="v">8</span>, force: <span class="v">0.4</span>, duree: <span class="v">4</span>, largeur: <span class="v">30</span> },</pre>
+<p>Pour l'activer, tout en haut du fichier : <code>const ELEMENT = "lave";</code></p>
+<div class="tableau"><table>
+  <tr><th>Réglage</th><th>Ce qu'il change</th></tr>
+  <tr><td><code>degatsParSec</code></td><td>Les dégâts par seconde pour un ennemi debout dans la flaque.</td></tr>
+  <tr><td><code>force</code></td><td>Le ralentissement : 0.4 = 40 % moins vite, 0.9 au maximum, 0 = pas de ralentissement.</td></tr>
+  <tr><td><code>duree</code></td><td>Le nombre de secondes avant que la flaque refroidisse.</td></tr>
+  <tr><td><code>largeur</code></td><td>La taille de la flaque, en pixels (Nexi en fait environ 16).</td></tr>
+</table></div>
+<p><b>Va plus loin :</b> invente ta propre flaque en copiant la ligne. Une flaque d'acide verte, large et lente :</p>
+<pre>acide: { effet: <span class="t">"flaque"</span>, couleur: <span class="t">"#b6ff3a"</span>, degatsParSec: <span class="v">4</span>, force: <span class="v">0.7</span>, duree: <span class="v">6</span>, largeur: <span class="v">50</span> },</pre>
+<p><b>Une arme de lave :</b> dans <code>ARMES</code>, copie la ligne <code>overheat</code> et donne-lui l'élément <code>"lave"</code>. Elle apparaîtra dans les coffres, même si <code>ELEMENT</code> vaut <code>"aucun"</code> :</p>
+<pre>magmaBlade: { nom: <span class="t">"Lame de magma"</span>, cat: <span class="t">"epee"</span>, poids: <span class="v">4</span>, degats: <span class="v">9</span>, gain: <span class="v">1.3</span>, element: <span class="t">"lave"</span>, desc: <span class="t">"Laisse de la lave au sol"</span> },</pre>
+<p><b>Comment c'est codé (pour les codeurs) :</b> trois petites fonctions. <code>poserFlaque</code> ajoute une flaque dans la liste <code>flaques</code> quand un coup touche (ou ravive celle qui est déjà là). <code>majFlaques</code> est appelée 60 fois par seconde : elle vieillit chaque flaque et, pour chaque ennemi qui a les pieds dedans, réutilise la brûlure et le ralentissement qui existaient déjà. <code>dessinerFlaques</code> la dessine avec des bulles. C'est la bonne façon d'ajouter un effet : réutiliser ce que le moteur sait déjà faire.</p>
+<a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#~const%20EFFETS_ELEMENTS">Ouvrir EFFETS_ELEMENTS</a></div>
+
+<div class="mission"><h3>Recette B — Un nouveau monstre</h3>
+<p>Trois niveaux : fais le premier, puis continue si tu as le temps.</p>
+<p><b>Niveau 1 : un cousin d'un monstre existant (2 minutes).</b> Dans <code>BESTIAIRE</code>, copie la ligne <code>ver</code>, colle-la en dessous et ajoute <code>comme</code> et <code>teinte</code> :</p>
+<pre>verLave: { nom: <span class="t">"Ver de lave"</span>, pv: <span class="v">25</span>, degats: <span class="v">12</span>, vitesse: <span class="v">40</span>, apparitionDes: <span class="v">1</span>, poids: <span class="v">3</span>, comme: <span class="t">"ver"</span>, teinte: <span class="v">40</span> },</pre>
+<p><code>comme: "ver"</code> : il bouge, se dessine et a la taille du ver. <code>teinte: 40</code> décale ses couleurs (un nombre de 0 à 360, comme un tour de la roue des couleurs : 180 = couleurs opposées). Ensuite, dans <code>PROGRESSION</code>, ajoute son nom dans la liste des petits ennemis, sinon il n'apparaîtra jamais :</p>
+<pre>PETITS: [<span class="t">"verLave"</span>, <span class="t">"ver"</span>, <span class="t">"glitch"</span>, <span class="t">"spyware"</span>, <span class="t">"script"</span>, <span class="t">"drone"</span>],</pre>
+<p><b>Ce que tu dois voir :</b> des vers orange dès la salle 1. Pour un gros ennemi, mets <code>comme: "trojan"</code> et ajoute son nom dans <code>GROS</code>.</p>
+
+<p><b>Niveau 2 : son propre dessin.</b> Ajoute une <code>palette</code> (une lettre = une couleur) et un <code>dessin</code> (une chaîne = une ligne de pixels, <code>.</code> = transparent). <code>dessin2</code> est la 2e image, pour qu'il s'anime. Sa taille se calcule toute seule d'après le dessin :</p>
+<pre>cookie: { nom: <span class="t">"Cookie traqueur"</span>, pv: <span class="v">20</span>, degats: <span class="v">8</span>, vitesse: <span class="v">35</span>, apparitionDes: <span class="v">1</span>, poids: <span class="v">3</span>, comme: <span class="t">"ver"</span>,
+  palette: { K: <span class="t">"#1a0d05"</span>, c: <span class="t">"#d99a4e"</span>, p: <span class="t">"#3b1d0a"</span>, E: <span class="t">"#FF5E7A"</span> },
+  dessin:  [<span class="t">"...KKKKK..."</span>, <span class="t">"..KcccccK.."</span>, <span class="t">".KccpccpcK."</span>, <span class="t">"KcccEccEccK"</span>,
+            <span class="t">"KcpccccccpK"</span>, <span class="t">"KcccccpcccK"</span>, <span class="t">".KccpccccK."</span>, <span class="t">"..KKKKKKK.."</span>],
+  dessin2: [<span class="t">"...KKKKK..."</span>, <span class="t">"..KcccccK.."</span>, <span class="t">".KcpccpccK."</span>, <span class="t">"KcccEccEccK"</span>,
+            <span class="t">"KccccpcccK."</span>, <span class="t">"KcpcccccpcK"</span>, <span class="t">".KcccccpcK."</span>, <span class="t">"..KKKKKKK.."</span>] },</pre>
+<p>N'oublie pas <code>"cookie"</code> dans <code>PETITS</code>. Astuce : dessine d'abord sur du papier quadrillé, une case = une lettre.</p>
+
+<p><b>Niveau 3 : son propre comportement (codeur).</b> Enlève <code>comme: "ver"</code> de la ligne du cookie. Puis, dans la fonction <code>majEnnemi</code>, ajoute un <code>case</code> à côté de celui du ver. Le cookie saute vers Nexi toutes les 1,5 seconde :</p>
+<pre>    <span class="k">case</span> <span class="t">"cookie"</span>: { <span class="c">// saute vers Nexi</span>
+      e.dir = Math.sign(dx) || e.dir;               <span class="c">// se tourne vers Nexi</span>
+      e.chrono -= dt;                               <span class="c">// compte à rebours avant le prochain saut</span>
+      <span class="k">if</span> (e.chrono &lt;= <span class="v">0</span> &amp;&amp; e.y &gt;= e.baseY) { e.vy = <span class="v">-170</span>; e.chrono = <span class="v">1.5</span>; }
+      e.vy += MONDE.GRAVITE * dt;                   <span class="c">// la gravité le ramène au sol</span>
+      e.y = Math.min(e.baseY, e.y + e.vy * dt);
+      <span class="k">if</span> (e.y &lt; e.baseY) e.x += e.dir * e.vitesse * <span class="v">2</span> * dt;   <span class="c">// avance seulement en l'air</span>
+      <span class="k">break</span>;
+    }</pre>
+<p><code>dx</code> est la distance jusqu'à Nexi (négative s'il est à gauche), <code>dt</code> le temps écoulé depuis la dernière image, <code>e.baseY</code> la hauteur du sol pour ce monstre. Change <code>-170</code> (la force du saut) ou <code>1.5</code> (le temps entre deux sauts) pour voir.</p>
+<a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#~const%20BESTIAIRE">Ouvrir BESTIAIRE</a></div>
+
+<div class="mission"><h3>Recette C — Un nouveau mini-boss</h3>
+<p>Un boss a beaucoup de pièces (dessin en formes, attaques, virus lâché à sa mort). Le plus simple : en prendre un existant comme modèle, puis changer son nom, ses couleurs et sa force. Dans <code>BOSS</code>, ajoute une ligne sous celle du Tyran :</p>
+<pre>givre: { nom: <span class="t">"Cheval de givre"</span>, titre: <span class="t">"Le présent gelé"</span>, pv: <span class="v">300</span>, degats: <span class="v">18</span>, comme: <span class="t">"troie"</span>, teinte: <span class="v">200</span> },</pre>
+<p>Puis mets son nom au début de <code>ORDRE</code>, pour l'affronter en premier :</p>
+<pre>ORDRE: [<span class="t">"givre"</span>, <span class="t">"troie"</span>, <span class="t">"botnet"</span>, <span class="t">"zombie"</span>, <span class="t">"e404"</span>, <span class="t">"kernel"</span>],</pre>
+<p><b>Ce que tu dois voir :</b> en salle 7, « CHEVAL DE GIVRE » et son titre s'affichent en grand. Il a les attaques et le dessin du Cheval de Troie, en bleu glacé. Vaincu, il lâche le virus de son modèle. Pour le tester vite, baisse <code>pv</code> à 50.</p>
+<p><b>Va plus loin (codeur) :</b> la liste <code>KITS</code> donne les attaques de chaque boss. Retire <code>"ventre"</code> de la ligne <code>troie</code> et ton Cheval de givre n'ouvrira plus jamais son point faible (le vrai Cheval de Troie non plus, car il partage la même liste). Chaque attaque est une fonction de <code>ATTAQUES</code> : lis <code>martelage</code>, la plus courte, pour comprendre comment elles marchent.</p>
+<a class="ouvrir" href="https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/#~const%20BOSS%20">Ouvrir BOSS</a></div>
+
 
 <!-- ============================================================== -->
 <h2 id="pannes">10. Ça ne marche plus ?</h2>
