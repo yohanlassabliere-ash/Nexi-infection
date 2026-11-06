@@ -4469,7 +4469,8 @@ function dessinerKO() {
    ================================================================== */
 function redimensionner() {
   dpr = window.devicePixelRatio || 1;
-  const lp = Math.round(window.innerWidth * dpr), hp = Math.round(window.innerHeight * dpr);
+  // une fenêtre pas encore affichée peut mesurer 0 pixel : on garde une taille minimale, sinon le décor plante
+  const lp = Math.max(288, Math.round(window.innerWidth * dpr)), hp = Math.max(135, Math.round(window.innerHeight * dpr));
   ZOOM = Math.max(1, Math.round(hp / 135));         // agrandissement entier = pixels nets
   VH = Math.ceil(hp / ZOOM); VW = Math.ceil(lp / ZOOM);
   const ancienSol = SOL;
