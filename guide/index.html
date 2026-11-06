@@ -122,11 +122,11 @@
 
 <h3>L'objet : une fiche avec des cases nommées</h3>
 <pre><span class="k">const</span> JOUEUR = {
-  PV_MAX: <span class="v">100</span>,          <span class="c">// Points de vie</span>
+  PV_MAX: <span class="v">150</span>,          <span class="c">// Points de vie</span>
   VITESSE: <span class="v">72</span>,          <span class="c">// Vitesse de déplacement</span>
   ONE_SHOT: <span class="v">false</span>,      <span class="c">// true = chaque coup tue l'ennemi</span>
 };</pre>
-<p>Entre <code>{</code> et <code>}</code>, chaque ligne est un couple <code>nom: valeur,</code>. Le jeu lit la valeur avec un point : <code>JOUEUR.PV_MAX</code> vaut <code>100</code>. <b>La virgule à la fin de chaque ligne est obligatoire</b> (sauf parfois la dernière).</p>
+<p>Entre <code>{</code> et <code>}</code>, chaque ligne est un couple <code>nom: valeur,</code>. Le jeu lit la valeur avec un point : <code>JOUEUR.PV_MAX</code> vaut <code>150</code>. <b>La virgule à la fin de chaque ligne est obligatoire</b> (sauf parfois la dernière).</p>
 
 <h3>Le tableau : une liste rangée</h3>
 <pre>PETITS: [<span class="t">"ver"</span>, <span class="t">"glitch"</span>, <span class="t">"spyware"</span>, <span class="t">"script"</span>, <span class="t">"drone"</span>],</pre>
@@ -202,7 +202,7 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
 <h3>CONFIGURATION DU JOUEUR (Nexi)</h3>
 <div class="tableau"><table>
   <tr><th>Réglage</th><th>Départ</th><th>Ce qu'il change</th><th>Essaie</th></tr>
-  <tr><td><code>PV_MAX</code></td><td>100</td><td>Les points de vie maximum.</td><td>999</td></tr>
+  <tr><td><code>PV_MAX</code></td><td>150</td><td>Les points de vie maximum.</td><td>999</td></tr>
   <tr><td><code>VITESSE</code></td><td>72</td><td>La vitesse de déplacement, en pixels par seconde.</td><td>140 ou 35</td></tr>
   <tr><td><code>FORCE_SAUT</code></td><td>215</td><td>La force du saut (vers le haut).</td><td>300</td></tr>
   <tr><td><code>DEGATS_LEGER</code></td><td>10</td><td>Les dégâts des coups normaux (toutes les armes en tiennent compte).</td><td>30</td></tr>
