@@ -54,6 +54,15 @@
   dialog h2 { font: 18px var(--titre); color: var(--or); margin: 0 0 8px; }
   dialog canvas { display: block; margin: 12px auto; image-rendering: pixelated; max-width: 100%; }
   .lien { font: 11px var(--code); word-break: break-all; color: var(--doux); background: var(--fond); padding: 6px; max-height: 70px; overflow: auto; }
+  details.guide { position: relative; }
+  details.guide summary { font: 13px var(--titre); color: var(--violet); background: #241a44; border: 2px solid var(--violet); padding: 7px 12px; cursor: pointer; list-style: none; }
+  details.guide summary::-webkit-details-marker { display: none; }
+  details.guide summary::after { content: " ▾"; }
+  details.guide[open] summary { border-color: var(--or); color: var(--or); }
+  details.guide .choix { position: absolute; top: calc(100% + 4px); left: 0; z-index: 10; display: flex; flex-direction: column; min-width: 220px; background: var(--panneau); border: 2px solid var(--or); }
+  details.guide a { font: 13px var(--titre); color: var(--texte); text-decoration: none; padding: 10px 12px; }
+  details.guide a + a { border-top: 1px solid var(--bord); }
+  details.guide a:hover, details.guide a:focus-visible { background: #241a44; color: var(--or); }
   .ligneBoutons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; justify-content: flex-end; }
 </style>
 </head>
@@ -65,6 +74,13 @@
     <button class="lancer" id="lancer" title="Ctrl + Entrée">▶ LANCER</button>
     <button class="tel" id="telephone">JOUER SUR MON TÉLÉPHONE</button>
     <button id="telecharger">TÉLÉCHARGER MON CODE</button>
+    <details class="guide" id="guide">
+      <summary>GUIDE</summary>
+      <div class="choix">
+        <a href="../guide/" target="_blank" rel="noopener">LIRE LE GUIDE</a>
+        <a href="../guide/guide_nexi_infection.pdf" download>TÉLÉCHARGER LE PDF</a>
+      </div>
+    </details>
     <span class="espace"></span>
     <span class="etat" id="etat">Chargement…</span>
     <button class="raz" id="raz" title="Pour le visiteur suivant">NOUVEAU VISITEUR</button>
@@ -123,6 +139,9 @@ const REGLAGES = [
   { nom: "Force (dégâts × …)", id: "MULT_DEGATS:" },
   { nom: "Monstres dans la 1re salle", id: "ENNEMIS_DEPART:" },
   { nom: "Chance d'être élémentaire", id: "CHANCE_ELEMENTAIRE:" },
+  { nom: "Couleur de la glace", id: "couleur:", apres: "glace:" },
+  { nom: "Ralentissement de la glace", id: "force:", apres: "const EFFETS_ELEMENTS" },
+  { nom: "Vol de vie du vampire", id: "part:", apres: "const EFFETS_ELEMENTS" },
   { groupe: "BOSS" },
   { nom: "Nom du Cheval de Troie", id: "troie:", apres: "const NOMS_BOSS" },
   { nom: "Nom du Tyran", id: "archonte:", apres: "const NOMS_BOSS" },
@@ -275,10 +294,19 @@ async function demarrer() {
   afficherReglages();
   lancer();
   // un lien du type atelier/#PV_MAX ouvre directement le bon réglage
-  const voulu = decodeURIComponent(location.hash.slice(1)), r = voulu && REGLAGES.find((x) => x.id && x.id.replace(/[:\s]+$/, "") === voulu);
-  if (r) allerAReglage(r);
-  else { const n = chercherLigne("★ DÉBUTANT — CONFIGURATION"); if (n) allerALigne(n); }
+  if (!suivreLien()) { const n = chercherLigne("★ DÉBUTANT — CONFIGURATION"); if (n) allerALigne(n); }
 }
+// atelier/#PV_MAX ouvre un réglage ; atelier/#~texte saute à la ligne qui contient ce texte
+function suivreLien() {
+  const voulu = decodeURIComponent(location.hash.slice(1)), r = voulu && REGLAGES.find((x) => x.id && x.id.replace(/[:\s]+$/, "") === voulu);
+  if (r) { allerAReglage(r); return true; }
+  const n = voulu.startsWith("~") && chercherLigne(voulu.slice(1));
+  if (n) { allerALigne(n); return true; }
+  return false;
+}
+window.addEventListener("hashchange", suivreLien);
+// le menu GUIDE se referme quand on clique ailleurs
+document.addEventListener("click", (ev) => { const g = document.getElementById("guide"); if (g.open && !g.contains(ev.target)) g.open = false; });
 demarrer();
 </script>
 </body>
