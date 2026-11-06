@@ -2397,7 +2397,7 @@ function rattrapage(depuis, jusqua) {
 const VERSION = "V0.9.6 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
 // Mode démo (pour le stand) : à chaque porte, on choisit la salle suivante parmi les 10 prochaines.
 // Il s'active tout seul sur l'adresse /demo/ (ou avec ?demo à la fin de l'adresse), avec sa propre sauvegarde.
-const MODE_DEMO = /[?&]demo\b/.test(location.search);
+const MODE_DEMO = false;
 const CLE_SAUVEGARDE = "nexi_infection_sauvegarde" + (MODE_DEMO ? "_demo" : "");   // nom de la sauvegarde dans le navigateur
 const BASE32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";     // pas de I, L, O, U : on ne les confond pas
 let partieSauvee = null;                               // dernière photo de la partie en cours

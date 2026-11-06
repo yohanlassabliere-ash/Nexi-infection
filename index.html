@@ -2357,48 +2357,12 @@ function majRetourne(e, dt) {
   if (Math.random() < 0.3) particule(e.x + rnd(0, e.w), e.y, rnd(-10, 10), -20, "#c9b0ff", 0.3);
 }
 
-// ---------- Mode démo : on rattrape la progression des salles sautées ----------
-function rattrapage(depuis, jusqua) {
-  let xp = 0, frag = 0;
-  for (let n = depuis + 1; n < jusqua; n++) {
-    const i = infoSalle(n);
-    if (i.type === "normal") {
-      const comp = compositionSalle(n);
-      xp += comp.reduce((s, t) => s + (XP_ENNEMIS[t] || 4), 0);
-      frag += (comp.reduce((s, t) => s + (t === "trojan" || t === "zombie" ? 2 : 1), 0) + LOOT.CHANCE_COFFRE * 7.5) * bonusProfondeur(n);
-    }
-    else if (i.type === "miniboss") { xp += XP_ENNEMIS.boss; frag += 25 * bonusProfondeur(n); }
-    else if (i.type === "archonte") { xp += XP_ENNEMIS.archonte; frag += 40 * bonusProfondeur(n); }
-  }
-  if (xp <= 0) return;
-  const avant = J.niveau;
-  frag = Math.round(frag);
-  gagnerXP(xp, true); J.fragments += frag;
-  const ordre = ["degats", "pv", "defense", "endurance", "vitesse"];
-  let i = 0;
-  while (J.points > 0) depenserPoint(ordre[i++ % ordre.length]);   // répartition automatique
-  // les fragments sont dépensés comme le ferait un joueur : l'arme d'abord, puis les armures
-  for (let encore = true; encore;) {
-    encore = false;
-    for (const o of [J.arme, J.armure.plastron, J.armure.casque, J.armure.bottes, J.armure.gantelets]) {
-      if (o && J.fragments >= coutAmelioration(o)) { J.fragments -= coutAmelioration(o); o.niv++; encore = true; break; }
-    }
-  }
-  majPvMax(); J.pv = J.pvMax;
-  const msg = { titre: "RATTRAPAGE DU MODE DÉMO", sous: "Niveau " + avant + " -> " + J.niveau + ", arme niveau " + J.arme.niv + ", +" + frag + " fragments", couleur: "#ffd84d", t: 3.5 };
-  if (introBoss) introBoss.banniere = msg; else banniere = msg;
-}
-
-
 /* ==================================================================
    ★★ CODEUR — ÉTAPE 4 : SAUVEGARDE (automatique, code, QR, fichier)
    Tout reste sur le téléphone du joueur : aucune donnée n'est envoyée.
    ================================================================== */
 const VERSION = "V0.9.6 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
-// Mode démo (pour le stand) : à chaque porte, on choisit la salle suivante parmi les 10 prochaines.
-// Il s'active tout seul sur l'adresse /demo/ (ou avec ?demo à la fin de l'adresse), avec sa propre sauvegarde.
-const MODE_DEMO = /[?&]demo\b/.test(location.search);
-const CLE_SAUVEGARDE = "nexi_infection_sauvegarde" + (MODE_DEMO ? "_demo" : "");   // nom de la sauvegarde dans le navigateur
+const CLE_SAUVEGARDE = "nexi_infection_sauvegarde";   // nom de la sauvegarde dans le navigateur
 const BASE32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";     // pas de I, L, O, U : on ne les confond pas
 let partieSauvee = null;                               // dernière photo de la partie en cours
 
@@ -3831,8 +3795,8 @@ function dessinerCarteTitre() {
   g.globalAlpha = 1;
 }
 
-// ---------- Mode démo : choisir la prochaine salle ----------
-let choixSalles = [], dernierTap = null;
+// ---------- Étiquette de la salle suivante (affichée quand la porte s'ouvre) ----------
+let dernierTap = null;
 function etiquetteSalle(n) {
   const i = infoSalle(n);
   if (i.type === "sanctuaire") return { type: "VER ULTIME", nom: "SANCTUAIRE", c: "#ffd84d" };
@@ -3840,29 +3804,6 @@ function etiquetteSalle(n) {
   if (i.type === "archonte") return { type: i.final ? "COMBAT FINAL" : "TYRAN", nom: NOMS_BOSS.archonte, c: C.corail };
   if (i.type === "miniboss") return { type: "MINI-BOSS", nom: i.mini < BOSS.ORDRE.length ? NOMS_BOSS[BOSS.ORDRE[i.mini]] : "???", c: "#ffd84d" };
   return { type: "SALLE", nom: compositionSalle(n).length + " ENNEMIS", c: "#c9b0ff" };
-}
-function caseChoix(i) { // position de la case i (2 rangées de 5)
-  const w = Math.min(54, Math.floor((VW - 16) / 5) - 2), h = 30, x0 = Math.round(VW / 2 - (w + 2) * 2.5);
-  return { x: x0 + (i % 5) * (w + 2), y: 30 + Math.floor(i / 5) * (h + 3), w, h };
-}
-function dessinerChoixSalle() {
-  trame("rgba(5,1,12,0.8)", 0);
-  texteCentre("MODE DÉMO : CHOISIS TA PROCHAINE SALLE", VW / 2, 16, "#ffd84d", C.encre);
-  choixSalles.forEach((n, i) => {
-    const r = caseChoix(i), e = etiquetteSalle(n);
-    rect(r.x, r.y, r.w, r.h, C.encre); rect(r.x + 1, r.y + 1, r.w - 2, r.h - 2, "#1d1236"); rect(r.x + 1, r.y + 1, r.w - 2, 1, e.c);
-    texteCentre("-" + profondeur(n) + " M", r.x + r.w / 2, r.y + 4, "#e8e2ff");
-    texteCentre(e.type, r.x + r.w / 2, r.y + 12, e.c);
-    const nom = normaliser(e.nom), max = Math.floor((r.w - 2) / 4);
-    texteCentre(nom.length > max ? nom.slice(0, max - 1) + "." : nom, r.x + r.w / 2, r.y + 20, "#8b7fc0");
-  });
-  texteCentre("TOUCHE UNE CASE (OU 1 À 0 AU CLAVIER)", VW / 2, 30 + 2 * 33 + 4, "#8b7fc0", C.encre);
-}
-function choisirSalle(i) {
-  if (i < 0 || i >= choixSalles.length) return;
-  const depuis = salle;
-  etat = "jeu"; salleSuivante(choixSalles[i]);
-  rattrapage(depuis, salle); // XP, fragments et niveau d'équipement des salles sautées
 }
 
 // ---------- Écran d'histoire et écran de victoire ----------
@@ -3959,8 +3900,7 @@ function maj(dt) {
     nombre(porte.x + porte.w / 2, porte.y - 10, "PORTE OUVERTE : " + etiquetteSalle(salle + 1).type, C.menthe, 2.2);
   }
   if (porte.ouverte && chevauche(corpsJoueur(), porte)) {
-    if (MODE_DEMO) { etat = "choixSalle"; choixSalles = Array.from({ length: 10 }, (_, i) => salle + 1 + i); J.x = porte.x - J.w - 4; }
-    else if (J.pv < J.pvMax - 0.5 && infoSalle(salle + 1).type !== "terminal") { J.x = porte.x - J.w - 4; menuPorte(); }   // blessé : on propose un soin
+    if (J.pv < J.pvMax - 0.5 && infoSalle(salle + 1).type !== "terminal") { J.x = porte.x - J.w - 4; menuPorte(); }   // blessé : on propose un soin
     else salleSuivante();
   }
   if (banniere) { banniere.t -= dt; if (banniere.t <= 0) banniere = null; }
@@ -4408,7 +4348,6 @@ function dessiner() {
   }
   if (etat === "ko") dessinerKO();
   if (etat === "victoire") dessinerVictoire();
-  if (etat === "choixSalle") dessinerChoixSalle();
   if (etat === "menu" && menu) dessinerMenu();
 }
 
@@ -4428,7 +4367,6 @@ function dessinerTitre() {
   texteCentre("LA PARTIE SE SAUVEGARDE AUX TERMINAUX (SALLES DE REPOS)", VW / 2, VH - 16, "#8b7fc0", C.encre);
   texteCentre("NEXA DIGITAL SCHOOL - CE JEU NE COLLECTE AUCUNE DONNÉE", VW / 2, VH - 8, "#6d6a9a");
   texte(VERSION, VW - 4 - largeurTexte(VERSION), 4, "#6d6a9a", C.encre);
-  if (MODE_DEMO) texte("MODE DÉMO", VW - 4 - largeurTexte("MODE DÉMO"), 12, "#ffd84d", C.encre);
   const z = zoneSauvegardeTitre();   // petit bouton pour importer une sauvegarde
   rect(z.x, z.y, z.w, z.h, "#1d1236"); rect(z.x, z.y, z.w, 1, "#ffd84d");
   texteCentre(partieSauvee ? "CONTINUER -" + profondeur(partieSauvee.salle) + " M" : "SAUVEGARDE", z.x + z.w / 2, z.y + 4, "#ffd84d");
@@ -4492,10 +4430,6 @@ function surTape() {
   else if (etat === "jeu" && dernierTap && surPause(dernierTap.x * dpr / ZOOM, dernierTap.y * dpr / ZOOM)) menuPause();
   else if (etat === "jeu" && introBoss && introBoss.t < 3.0) introBoss.t = 3.0; // passer l'entrée du boss
   else if (etat === "menu" && menu && dernierTap) toucherMenu(dernierTap.x * dpr / ZOOM, dernierTap.y * dpr / ZOOM);
-  else if (etat === "choixSalle" && dernierTap) {
-    const lx = dernierTap.x * dpr / ZOOM, ly = dernierTap.y * dpr / ZOOM;
-    choixSalles.forEach((n, i) => { const r = caseChoix(i); if (lx >= r.x && lx < r.x + r.w && ly >= r.y && ly < r.y + r.h) choisirSalle(i); });
-  }
 }
 let dernier = 0;
 function boucle(ts) {
@@ -4548,7 +4482,6 @@ function demarrer() {
     if (etat === "jeu" && (ev.code === "Escape" || ev.code === "KeyP")) { menuPause(); ev.preventDefault(); return; }
     clavier[ev.code] = true; clavierBref[ev.code] = true;
     if (etat === "menu" && menu) { clavierMenu(ev.code); ev.preventDefault(); return; }
-    if (etat === "choixSalle" && /^Digit[0-9]$/.test(ev.code)) { const d = +ev.code.slice(5); choisirSalle(d === 0 ? 9 : d - 1); return; }
     if (ev.code === "Enter" || ev.code === "Space") tapEnAttente = true;
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(ev.code)) ev.preventDefault();
   });

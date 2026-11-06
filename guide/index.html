@@ -343,7 +343,7 @@ FORCE_SAUT: <span class="v">350</span>,</pre>
 <p><code>dt</code> (« delta temps ») est le temps écoulé depuis l'image précédente. Tout ce qui bouge est multiplié par <code>dt</code> : <code>e.x += e.dir * 130 * dt</code> veut dire « avancer de 130 pixels par seconde », quelle que soit la vitesse de l'ordinateur.</p>
 
 <h3>Les états du jeu</h3>
-<p>La variable <code>etat</code> dit où on en est : <code>"titre"</code>, <code>"histoire"</code>, <code>"jeu"</code>, <code>"menu"</code> (pause, Terminal, inventaire…), <code>"choixSalle"</code> (mode démo), <code>"ko"</code>, <code>"victoire"</code>. Le monde n'avance que quand <code>etat === "jeu"</code> : c'est ce qui met le jeu en pause dans les menus.</p>
+<p>La variable <code>etat</code> dit où on en est : <code>"titre"</code>, <code>"histoire"</code>, <code>"jeu"</code>, <code>"menu"</code> (pause, Terminal, inventaire…), <code>"ko"</code>, <code>"victoire"</code>. Le monde n'avance que quand <code>etat === "jeu"</code> : c'est ce qui met le jeu en pause dans les menus.</p>
 
 <h3>Les salles</h3>
 <p><code>infoSalle(n)</code> calcule ce qu'est la salle numéro <code>n</code> (normale, Terminal, mini-boss, Tyran, sanctuaire) en rejouant les cycles depuis le début. <code>chargerSalle(n)</code> vide la salle précédente et crée la nouvelle : ennemis (<code>compositionSalle</code>), coffre, pièges, boss. <code>salleSuivante()</code> est appelée quand Nexi passe la porte : elle tire un bonus ou un malus puis charge la salle.</p>

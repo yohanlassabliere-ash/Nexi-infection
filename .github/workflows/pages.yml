@@ -46,7 +46,7 @@ jobs:
             mkdir -p "$2"
             python3 "$1/outils/archiver_version.py" || true
             cp "$1/index.html" "$2/"
-            for f in outils.js atelier jouer versions guide demo; do
+            for f in outils.js atelier jouer versions guide; do
               if [ -e "$1/$f" ]; then cp -r "$1/$f" "$2/"; fi
             done
           }
