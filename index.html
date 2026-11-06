@@ -83,6 +83,7 @@ const MONSTRES = {
   GAIN_PAR_SALLE: 0.045, // Les PV des ennemis sont multipliés par 1,045 à chaque salle (ça s'accumule vite !). Essaie 0.1 pour un donjon brutal.
   ENNEMIS_DEPART: 2,     // Nombre d'ennemis dans la toute première salle.
   ENNEMIS_MAX: 9,        // Nombre maximum d'ennemis par salle.
+  CHANCE_ELEMENTAIRE: 0.15, // Chance qu'un ennemi soit « de feu » ou « de foudre » (à partir de la salle 3).
 };
 
 
@@ -93,7 +94,7 @@ const MONSTRES = {
 // (pratique pour aller voir directement un boss ou le Tyran).
 // false = le jeu normal : on descend salle par salle.
 const MODE_DEMO = false;
-const VERSION = "V0.9.4 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
+const VERSION = "V0.9.5 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
 
 
 // ==================================================================
@@ -432,6 +433,20 @@ const BRUITAGES = {
   rollback:   { onde: "sine", notes: ["C6", "G5", "E5", "C5", "G4", "C4"], duree: 0.06, vol: 0.25 },
 };
 
+
+// ==================================================================
+// ★★ CODEUR — LES PIÈGES (dans les salles normales, à partir de la salle 2)
+// ==================================================================
+// explosif   : une mine qui bipe quand on marche dessus, puis explose (elle blesse aussi les ennemis)
+// brulant    : une grille qui crache des flammes par moments : on attend ou on saute par-dessus
+// foudroyant : un arc électrique entre deux bornes, allumé par moments : il paralyse
+const PIEGES = {
+  CHANCE_PAR_SALLE: 0.5,   // chance qu'une salle normale contienne des pièges
+  MAX_PAR_SALLE: 3,        // nombre maximum de pièges dans une salle
+  explosif:   { nom: "Mine logique",       degats: 22, rayon: 28, delai: 0.7 },
+  brulant:    { nom: "Grille surchauffée", degats: 8,  actif: 1.4, repos: 2.0, largeur: 26 },
+  foudroyant: { nom: "Arc électrique",     degats: 10, actif: 1.0, repos: 2.2, largeur: 30, paralysie: 0.6 },
+};
 
 // ==================================================================
 // ★★ CODEUR — MONDE
@@ -838,23 +853,27 @@ let calqueLoin, calqueProche, images = {};
 let etat = "titre", temps = 0, tKo = 0;
 let J = null, salle = 1, tues = 0, record = 1;
 let plateformes = [], bougies = [], porte = null;
-let ennemis = [], projectiles = [], projAllies = [], pieges = [], fioles = [];
+let ennemis = [], projectiles = [], projAllies = [], pieges = [], fioles = [], piegesSalle = [];
 let particules = [], textes = [], explosions = [], eclairs = [];
 let effets = [], gardien = null, banniere = null, ondes = [];
 let camX = 0, secousse = 0, tFoudreAuto = 2;
 
 // ---------- Effets de porte ----------
+// Dans la salle de repos (Terminal, ROLLBACK, souvenirs), les bonus et malus de porte sont en pause
+const effetsEnPause = () => !!salleInfo && (salleInfo.type === "terminal" || salleInfo.type === "souvenir");
 function multEffets(cle) {
   let m = 1;
+  if (effetsEnPause()) return m;
   for (const e of effets) if (e.def.mods && e.def.mods[cle] !== undefined) m *= e.def.mods[cle];
   return m;
 }
 function sommeAjouts(cle) {
   let s = 0;
+  if (effetsEnPause()) return s;
   for (const e of effets) if (e.def.ajouts && e.def.ajouts[cle] !== undefined) s += e.def.ajouts[cle];
   return s;
 }
-function aEffet(drapeau) { return effets.some(e => e.def.drapeaux && e.def.drapeaux.includes(drapeau)); }
+function aEffet(drapeau) { return !effetsEnPause() && effets.some(e => e.def.drapeaux && e.def.drapeaux.includes(drapeau)); }
 function parasiteVivant() { return ennemis.some(e => e.type === "parasite" && !e.mort); }
 function degatsMultJoueur() { return multEffets("degats") * (parasiteVivant() ? 0.75 : 1); }
 function ajouterEffet(def) {
@@ -1273,7 +1292,7 @@ function chargerSalle(n) {
   if (porte) porte.ouverte = false;
   genererDecor(n);
   porte.ouverte = false;
-  ennemis = []; projectiles = []; projAllies = []; pieges = []; fioles = [];
+  ennemis = []; projectiles = []; projAllies = []; pieges = []; fioles = []; piegesSalle = [];
   explosions = []; eclairs = []; textes = []; ondes = [];
   ondesSol = []; rayons = []; zones = []; trous = []; colonnes = []; capsules = []; allies = [];
   ecranBleuT = 0; gravSigne = 1;
@@ -1284,6 +1303,7 @@ function chargerSalle(n) {
   if (info.type === "normal") {
     for (const type of compositionSalle(n)) ennemis.push(creerEnnemi(type, rnd(150, MONDE.LARGEUR_SALLE - 70), n));
     if (Math.random() < LOOT.CHANCE_COFFRE) coffresSalle.push({ x: Math.round(rnd(80, MONDE.LARGEUR_SALLE - 90)), y: SOL - 12, w: 16, h: 12, ouvert: false, proche: false });
+    if (n >= 2 && Math.random() < PIEGES.CHANCE_PAR_SALLE) placerPieges(n);
   }
   else if (info.type === "sanctuaire") autel = { x: Math.round(MONDE.LARGEUR_SALLE / 2) - 8, pris: false };
   else if (info.type === "terminal") { // la salle de repos : le Terminal, et à part, le ROLLBACK
@@ -1317,6 +1337,7 @@ function compositionSalle(n) {
 function salleSuivante(cible, malusForce) {
   salle = cible || salle + 1;
   record = Math.max(record, salle);
+  if (infoSalle(salle).type === "terminal") { chargerSalle(salle); banniere = { titre: "TERMINAL - PARTIE SAUVEGARDÉE", sous: "Bonus et malus en pause ici. Approche-toi pour te soigner et t'équiper.", couleur: C.menthe, t: 4 }; return; }
   for (const e of effets) e.restant--;
   effets = effets.filter(e => e.restant > 0);
   // La porte tire au hasard un bonus OU un malus (forcément un malus si on s'est soigné « avec malus »)
@@ -1340,6 +1361,9 @@ function creerEnnemi(type, x, n) {
   // croissance exponentielle : chaque salle multiplie la force des ennemis (les dégâts montent un peu moins vite)
   const f = Math.pow(1 + MONSTRES.GAIN_PAR_SALLE, n - 1), fDeg = Math.pow(1 + MONSTRES.GAIN_PAR_SALLE * 0.6, n - 1);
   const pv = d.pv * MONSTRES.MULT_PV * f * (type === "parasite" ? 1 : multEffets("pvEnnemis"));
+  return finirEnnemiElementaire(nouvelEnnemi(type, d, x, n, f, fDeg, pv));
+}
+function nouvelEnnemi(type, d, x, n, f, fDeg, pv) {
   const [w, h] = TAILLES[type];
   let y = SOL - h;
   if (type === "glitch") y = SOL - rnd(55, 70);
@@ -1352,8 +1376,15 @@ function creerEnnemi(type, x, n) {
     dir: -1, t: Math.random() * 3, minuteur: rnd(0.8, 2.2), etat: "normal",
     vx: 0, vy: 0, chrono: 0, charge: 0, aFrappe: false,
     flash: 0, brulure: 0, poison: { doses: 0, t: 0 }, jauge: 0, paralyse: 0, tickDot: 0, immuTxt: 0, mort: false,
+    element: rendreElementaire(type, n),
   };
 }
+// Certains ennemis sont « élémentaires » : un peu plus résistants, leurs coups brûlent ou paralysent Nexi
+function rendreElementaire(type, n) {
+  if (type === "parasite" || n < 3 || Math.random() >= MONSTRES.CHANCE_ELEMENTAIRE) return null;
+  return Math.random() < 0.5 ? "feu" : "foudre";
+}
+function finirEnnemiElementaire(e) { if (e.element) { e.pv = e.pvMax = e.pvMax * 1.25; e.nom = e.nom + (e.element === "feu" ? " de feu" : " de foudre"); } return e; }
 
 // ---------- Dégâts infligés ----------
 function immunise(e) { if (e.immuTxt <= 0) { nombre(e.x + e.w / 2, e.y - 8, "IMMUNISÉ", "#c9b0ff"); e.immuTxt = 0.6; } }
@@ -1448,7 +1479,7 @@ function tuerEnnemi(e) {
   }
   tues++;
   if (e.boss) { bossVaincu(e); return; }
-  gagnerXP(XP_ENNEMIS[e.type] || 4);
+  gagnerXP(Math.round((XP_ENNEMIS[e.type] || 4) * (e.element ? 1.5 : 1)));   // un ennemi élémentaire rapporte plus
   if (e.minion && e.type !== "ver" && e.type !== "glitch") return;
   gagnerFragments(e.type === "trojan" || e.type === "zombie" ? 2 : 1);
   if (Math.random() < LOOT.CHANCE_OBJET * (armeDef().effet === "minage" ? 2 : 1)) lacherObjet(objetAuHasard(nivDeProfondeur(salle)), cx);
@@ -1557,7 +1588,7 @@ function majEnnemi(e, dt) {
       } else {
         e.chrono -= dt;
         const rayon = { x: ec - 3, y: e.y + e.h, w: 6, h: SOL - (e.y + e.h) };
-        if (chevauche(rayon, corpsJoueur())) blesserJoueur(e.degats, ec);
+        if (chevauche(rayon, corpsJoueur())) blesserJoueur(e.degats, ec, e.element);
         if (e.chrono <= 0) { e.etat = "normal"; e.minuteur = e.def.cadenceTir; }
       }
       break;
@@ -1578,7 +1609,7 @@ function majEnnemi(e, dt) {
       } else if (e.etat === "frappe") {
         e.chrono -= dt;
         const hb = { x: e.dir > 0 ? e.x + e.w : e.x - 22, y: e.y + 4, w: 22, h: e.h - 4 };
-        if (!e.aFrappe && chevauche(hb, corpsJoueur())) { blesserJoueur(e.degats, ec); e.aFrappe = true; }
+        if (!e.aFrappe && chevauche(hb, corpsJoueur())) { blesserJoueur(e.degats, ec, e.element); e.aFrappe = true; }
         if (e.chrono <= 0) { e.etat = "repos"; e.chrono = 0.8; }
       } else { e.chrono -= dt; if (e.chrono <= 0) e.etat = "normal"; }
       break;
@@ -1593,12 +1624,15 @@ function majEnnemi(e, dt) {
     }
   }
   e.x = clamp(e.x, 0, MONDE.LARGEUR_SALLE - e.w);
-  if (e.type !== "parasite" && e.type !== "drone" && chevauche(e, corpsJoueur())) blesserJoueur(e.degats * (e.type === "trojan" ? 0.4 : 1), ec);
+  if (e.element && Math.random() < 0.35) particule(e.x + rnd(0, e.w), e.y + rnd(0, e.h), rnd(-8, 8), rnd(-30, -10), e.element === "feu" ? (Math.random() < 0.5 ? "#ff8a3c" : "#ffd84d") : (Math.random() < 0.5 ? "#2af5ff" : "#ffffff"), 0.35);
+  if (e.type !== "parasite" && e.type !== "drone" && chevauche(e, corpsJoueur())) blesserJoueur(e.degats * (e.type === "trojan" ? 0.4 : 1), ec, e.element);
 }
 
 // ---------- Dégâts reçus par Nexi ----------
-function blesserJoueur(dmg, sourceX) {
+function blesserJoueur(dmg, sourceX, element) {
   if (J.invul > 0 || J.invisible > 0 || etat !== "jeu") return;
+  if (element === "feu") { J.brule = 2.5; nombre(J.x + J.w / 2, J.y - 14, "BRÛLÉ", "#ff8a3c"); }          // brûlure : quelques PV en plus
+  if (element === "foudre") { J.fige = Math.max(J.fige, 0.5); nombre(J.x + J.w / 2, J.y - 14, "PARALYSÉ", "#2af5ff"); }
   if (J.virus === "troie") dmg *= 1.2;
   dmg *= 50 / (50 + defenseTotale());                     // l'armure réduit les dégâts
   if (JOUEUR.UN_COUP_KO) dmg = J.pv;
@@ -1628,6 +1662,11 @@ function majJoueur(dt) {
   J.invul -= dt; J.cdL -= dt; J.cdH -= dt; J.lent -= dt; J.traverse -= dt; J.touche -= dt; J.tAnim += dt;
   const etaitInvisible = J.invisible > 0;
   J.fige -= dt; J.immobile -= dt; J.invisible -= dt;
+  if (J.brule > 0) { // brûlure : 2 PV toutes les 0,8 seconde pendant 2,5 secondes
+    J.brule -= dt; J.tBrule = (J.tBrule || 0) + dt;
+    if (Math.random() < 0.5) particule(J.x + rnd(0, J.w), J.y + rnd(5, 28), rnd(-10, 10), rnd(-40, -15), Math.random() < 0.5 ? "#ff8a3c" : "#ffd84d", 0.4);
+    if (J.tBrule >= 0.8) { J.tBrule = 0; perdrePV(2); nombre(J.x + J.w / 2, J.y - 4, "-2", "#ff8a3c"); }
+  }
   if (etaitInvisible && J.invisible <= 0 && synergie("e404")) explosionCorrompue(J.leurreX, SOL - 15, degatsArme(true) * 2); // le leurre explose
   if (aEffetArmure("bypass")) J.lent = 0;
   const fige = J.fige > 0, bloque = fige || J.immobile > 0;
@@ -2260,6 +2299,7 @@ function toucherAvecArme(e, final, dmg, el) {
   secousse = Math.max(secousse, final ? 0.14 : 0.05);
 }
 function appliquerElementType(e, el) { // comme appliquerElement, mais avec l'élément de l'arme
+  if (e.element && e.element === el) return;   // un ennemi de feu ne brûle pas, un ennemi de foudre ne se paralyse pas
   if (el === ELEMENT_ACTIF) { appliquerElement(e); return; }
   if (el === "feu") e.brulure = EFFETS_ELEMENTS.feu.duree;
   else if (el === "foudre") { e.jauge++; if (e.jauge >= EFFETS_ELEMENTS.foudre.coupsPourParalyser) { e.jauge = 0; e.paralyse = e.boss ? 0.6 : EFFETS_ELEMENTS.foudre.dureeParalysie; } }
@@ -3844,7 +3884,7 @@ function maj(dt) {
   majAllies(dt);
   majAlliesVirus(dt);
   majDangers(dt);
-  majTirs(dt); majOndesJoueur(dt);
+  majTirs(dt); majOndesJoueur(dt); majPiegesSalle(dt);
   majButins(dt); if (etat !== "jeu") return;
   majTerminal(); if (etat !== "jeu") return;
   majRollback(); if (etat !== "jeu") return;
@@ -3897,6 +3937,71 @@ function maj(dt) {
     else salleSuivante();
   }
   if (banniere) { banniere.t -= dt; if (banniere.t <= 0) banniere = null; }
+}
+
+// ---------- Les pièges de salle ----------
+function placerPieges(n) {
+  const nb = 1 + Math.floor(Math.random() * PIEGES.MAX_PAR_SALLE), types = ["explosif", "brulant", "foudroyant"];
+  const fDeg = Math.pow(1 + MONSTRES.GAIN_PAR_SALLE * 0.6, n - 1);   // ils font plus mal en profondeur
+  for (let i = 0; i < nb; i++) {
+    const type = types[Math.floor(Math.random() * types.length)], d = PIEGES[type];
+    const w = type === "explosif" ? 10 : d.largeur;
+    let x, essais = 0;
+    do { x = Math.round(rnd(90, MONDE.LARGEUR_SALLE - 80)); essais++; }
+    while (essais < 20 && piegesSalle.some(p => Math.abs(p.x - x) < 50));
+    piegesSalle.push({ type, x, w, degats: d.degats * fDeg, t: Math.random() * 3, arme: false, chrono: 0, actif: false, fini: false });
+  }
+}
+function majPiegesSalle(dt) {
+  const corps = corpsJoueur(), auSol = corps.y + corps.h >= SOL - 2;
+  for (const p of piegesSalle) {
+    if (p.fini) continue;
+    const d = PIEGES[p.type];
+    if (p.type === "explosif") {
+      if (!p.arme && auSol && chevauche(corps, { x: p.x, y: SOL - 4, w: p.w, h: 4 })) { p.arme = true; p.chrono = d.delai; son("menu"); nombre(p.x + 5, SOL - 14, "CLIC !", C.corail); }
+      if (p.arme) {
+        p.chrono -= dt;
+        if (Math.floor(p.chrono * 10) % 2 === 0) son("menu");
+        if (p.chrono <= 0) { // boum : Nexi et les ennemis proches
+          p.fini = true; secousse = 0.3; son("explosion");
+          for (let i = 0; i < 24; i++) particule(p.x + 5, SOL - 4, rnd(-90, 90), rnd(-120, -10), i % 3 ? "#ff8a3c" : "#ffd84d", 0.5);
+          const cx = p.x + 5;
+          if (Math.abs(J.x + J.w / 2 - cx) < d.rayon) blesserJoueur(p.degats, cx, "feu");
+          for (const e of ennemis) if (!e.mort && Math.abs(e.x + e.w / 2 - cx) < d.rayon && e.y + e.h > SOL - 30) infligerDegats(e, p.degats * 2, true);
+        }
+      }
+    } else {
+      p.t += dt;
+      const cycle = d.actif + d.repos, phase = p.t % cycle;
+      p.prevenir = phase > d.repos - 0.5 && phase < d.repos;   // ça grésille juste avant
+      p.actif = phase >= d.repos;
+      const zone = { x: p.x, y: SOL - (p.type === "brulant" ? 16 : 20), w: p.w, h: p.type === "brulant" ? 16 : 20 };
+      if (p.actif && chevauche(corps, zone)) {
+        if (p.type === "brulant") blesserJoueur(p.degats, p.x + p.w / 2, "feu");
+        else { blesserJoueur(p.degats, p.x + p.w / 2, "foudre"); J.fige = Math.max(J.fige, d.paralysie); }
+      }
+      if (p.actif && p.type === "brulant" && Math.random() < 0.8) particule(p.x + rnd(0, p.w), SOL - 2, rnd(-6, 6), rnd(-90, -50), Math.random() < 0.5 ? "#ff8a3c" : "#ffd84d", 0.25);
+    }
+  }
+}
+function dessinerPiegesSalle(ox, oy) {
+  for (const p of piegesSalle) {
+    if (p.fini) { rect(p.x - ox, SOL - 1 - oy, 10, 1, "#2a1a10"); continue; }
+    const x = Math.round(p.x - ox), y = SOL - oy;
+    if (p.type === "explosif") {
+      rect(x - 1, y - 4, 12, 4, C.encre); rect(x, y - 3, 10, 3, "#4a4f68"); rect(x, y - 3, 10, 1, "#7a8098");
+      const allume = p.arme ? Math.floor(temps * 12) % 2 : Math.floor(temps * 2) % 2;
+      rect(x + 4, y - 5, 2, 2, allume ? C.corail : "#5a1a28");
+    } else if (p.type === "brulant") {
+      rect(x - 1, y - 3, p.w + 2, 3, C.encre); rect(x, y - 2, p.w, 2, "#3a2418");
+      for (let i = 1; i < p.w; i += 3) px(x + i, y - 2, p.actif || p.prevenir ? "#ff8a3c" : "#5a3020");
+      if (p.actif) for (let i = 0; i < p.w; i += 2) { const h = 6 + Math.round(9 * Math.abs(Math.sin(temps * 13 + i))); rect(x + i, y - 2 - h, 2, h, i % 4 ? "#ff8a3c" : "#ffd84d"); px(x + i, y - 2 - h, "#ffffff"); }
+    } else {
+      for (const bx of [x, x + p.w - 3]) { rect(bx - 1, y - 15, 5, 15, C.encre); rect(bx, y - 14, 3, 14, "#3a3f58"); rect(bx, y - 14, 3, 2, p.actif || p.prevenir ? "#2af5ff" : "#5a6080"); }
+      if (p.actif) { let yy = y - 11; for (let i = 3; i < p.w - 3; i++) { yy = y - 11 + Math.round(Math.sin(temps * 40 + i * 1.7) * 3); px(x + i, yy, Math.random() < 0.3 ? "#ffffff" : "#2af5ff"); px(x + i, yy + 1, "#2af5ff"); } }
+      else if (p.prevenir && Math.random() < 0.5) px(x + 3 + Math.random() * (p.w - 6), y - 11, "#ffffff");
+    }
+  }
 }
 
 // ---------- Devant la porte, blessé : se soigner ou pas ----------
@@ -4092,6 +4197,11 @@ function dessinerEnnemi(e, ox, oy) {
     if (e.etat === "vise") for (let y = sy + im.d.height; y < SOL - oy; y += 2) px(sx + 7, y, C.corail);
     else if (e.etat === "tir") { rect(sx + 5, sy + im.d.height, 5, SOL - oy - sy - im.d.height, "rgba(255,94,122,0.9)"); rect(sx + 7, sy + im.d.height, 1, SOL - oy - sy - im.d.height, "#ffffff"); }
   }
+  if (e.element) { // halo de couleur sous un ennemi élémentaire
+    const c = e.element === "feu" ? "#ff8a3c" : "#2af5ff", cx = Math.round(e.x + e.w / 2 - ox), by = Math.round(e.y + e.h - oy);
+    for (let i = -e.w / 2 - 2; i <= e.w / 2 + 2; i++) if ((i + Math.floor(temps * 8)) % 3) px(cx + i, by, c);
+    if (Math.floor(temps * 6 + e.t) % 2) { px(cx - e.w / 2 - 2, by - 3 - (Math.floor(temps * 9) % 6), c); px(cx + e.w / 2 + 2, by - 6 + (Math.floor(temps * 7) % 5), c); }
+  }
   if (e.type === "zombie") g.globalAlpha = 0.75 + 0.2 * Math.sin(e.t * 7);
   if (e.type === "orphelin") g.globalAlpha = e.dormant > 0 ? 0.25 : 0.8;
   if (e.type === "parasite") { g.strokeStyle = C.veine; g.lineWidth = 1; g.beginPath(); g.moveTo(sx + 4.5, sy + 8.5); g.lineTo(Math.round(J.x + J.w / 2 - ox) + 0.5, Math.round(J.y + 10 - oy) + 0.5); g.stroke(); }
@@ -4172,7 +4282,8 @@ function dessinerHUD() {
   if (J.virus) texte("VIRUS : " + VIRUS[J.virus].nom, 4, yh, "#c9b0ff", C.encre);
   if (etat === "jeu") { dessinerBoutonPause(); dessinerIconeSauvegarde(); }
   let y = 17;
-  for (const e of effets) {
+  if (effetsEnPause() && effets.length) { const t = "BONUS/MALUS EN PAUSE"; texte(t, VW - 3 - largeurTexte(t), y, "#8b7fc0", C.encre); y += 7; }
+  else for (const e of effets) {
     const t = e.def.nom + " " + (e.restant === Infinity ? "*" : e.restant);
     texte(t, VW - 3 - largeurTexte(t), y, LISTE_BONUS.includes(e.def) ? C.menthe : C.corail, C.encre);
     y += 7;
@@ -4217,6 +4328,7 @@ function dessiner() {
   dessinerTerminal(ox, oy);
   dessinerRollback(ox, oy);
   dessinerButins(ox, oy);
+  dessinerPiegesSalle(ox, oy);
   for (const p of pieges) {
     rect(p.x - ox, p.y - oy, p.w, p.h, Math.floor(temps * 6) % 2 ? C.corail : "#a83a5a");
     px(p.x + 2 - ox, p.y + 1 - oy, C.encre); px(p.x + 5 - ox, p.y + 1 - oy, C.encre);
