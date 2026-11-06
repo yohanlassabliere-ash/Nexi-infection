@@ -40,11 +40,16 @@ jobs:
           ref: dev
           path: dev
         continue-on-error: true
-      - name: Assembler le site
+      - name: Assembler le site (jeu, atelier, page « jouer », versions d'origine)
         run: |
-          mkdir -p site/dev
-          cp main/index.html site/index.html
-          if [ -f dev/index.html ]; then cp dev/index.html site/dev/index.html; else cp main/index.html site/dev/index.html; fi
+          assembler() {   # $1 = dossier de la branche, $2 = dossier du site
+            mkdir -p "$2"
+            python3 "$1/outils/archiver_version.py" || true
+            cp "$1/index.html" "$2/"
+            for f in outils.js atelier jouer versions; do [ -e "$1/$f" ] && cp -r "$1/$f" "$2/"; done
+          }
+          assembler main site
+          if [ -f dev/index.html ]; then assembler dev site/dev; else assembler main site/dev; fi
           touch site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
