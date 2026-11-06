@@ -1,6 +1,6 @@
 # Publie le jeu sur GitHub Pages à chaque envoi :
-#   branche main -> https://<pseudo>.github.io/nexi-infection/      (version stable)
-#   branche dev  -> https://<pseudo>.github.io/nexi-infection/dev/  (version de test)
+#   branche main -> https://<pseudo>.github.io/Nexi-infection/      (version stable)
+#   branche dev  -> https://<pseudo>.github.io/Nexi-infection/dev/  (version de test)
 name: Publier le jeu
 
 # GitHub n'autorise la publication que depuis main : un envoi sur dev
