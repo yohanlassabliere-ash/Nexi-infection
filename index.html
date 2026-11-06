@@ -41,7 +41,8 @@ const JOUEUR = {
   DEGATS_LEGER: 10,     // Dégâts des 2 premiers coups du combo léger.
   DEGATS_COMBO: 18,     // Dégâts du 3e coup du combo (le plus fort). Essaie 50 !
   COOLDOWN_LEGER: 0.22, // Secondes entre deux coups légers.
-  REGEN_PV_PAR_SEC: 0,  // Régénération passive. Essaie 2 pour te soigner doucement.
+  REGEN_PV: 0,          // PV rendus à chaque « pulsation » (voir ci-dessous). Essaie 5 pour te soigner doucement.
+  PULSATION_PV: 6,      // Toutes les 6 secondes, les soins et les pertes de PV lents s'appliquent d'un coup.
   ONE_SHOT: false,      // true = chaque coup qui touche tue l'ennemi instantanément.
   UN_COUP_KO: false,    // true = mode Hardcore : Nexi meurt au premier coup reçu.
 };
@@ -92,7 +93,7 @@ const MONSTRES = {
 // (pratique pour aller voir directement un boss ou le Tyran).
 // false = le jeu normal : on descend salle par salle.
 const MODE_DEMO = false;
-const VERSION = "V0.9.3 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
+const VERSION = "V0.9.4 BÊTA";   // affichée sur l'écran titre : à citer quand on signale un bug
 
 
 // ==================================================================
@@ -173,7 +174,7 @@ const EFFETS_ELEMENTS = {
 // duree = nombre de salles où l'effet dure (1 = cette salle seulement,
 //         Infinity = pour toute la partie).
 // mods  = multiplicateurs   (vitesse, degats, cadence, cooldownLourd, pvEnnemis)
-// ajouts = valeurs ajoutées (pvParSec)
+// ajouts = valeurs ajoutées (pvParPulsation : PV gagnés ou perdus toutes les 6 s)
 // drapeaux = effets spéciaux codés plus bas (foudreAuto, gardien, corrompue,
 //            parasite, explosifs)
 const PORTES = {
@@ -194,7 +195,7 @@ const LISTE_MALUS = [
   { nom: "Monstres renforcés",  desc: "PV des ennemis +30 %",                       duree: 1, mods: { pvEnnemis: 1.3 } },
   { nom: "Lenteur",             desc: "Vitesse -30 %",                              duree: 1, mods: { vitesse: 0.7 } },
   { nom: "Salle corrompue",     desc: "Vision réduite, écran parasité",             duree: 1, drapeaux: ["corrompue"] },
-  { nom: "Fuite de mémoire",    desc: "Tu perds 1,5 PV par seconde",                duree: 1, ajouts: { pvParSec: -1.5 } },
+  { nom: "Fuite de mémoire",    desc: "Tu perds 5 PV toutes les 6 secondes",        duree: 1, ajouts: { pvParPulsation: -5 } },
   { nom: "Parasite",            desc: "Il te suit et t'affaiblit. Détruis-le !",    duree: 2, drapeaux: ["parasite"] },
   { nom: "Surchauffe",          desc: "Compétence 50 % plus longue à recharger",    duree: 2, mods: { cooldownLourd: 1.5 } },
   { nom: "Ennemis explosifs",   desc: "Les ennemis explosent en mourant",           duree: 1, drapeaux: ["explosifs"] },
@@ -336,7 +337,7 @@ const ARMURES = {
   bottesSSD:     { nom: "Bottes SSD",          piece: "bottes",    poids: 1, defense: 2, gain: 0.6, vitesse: 1.05 },
   grevesServeur: { nom: "Grèves serveur",      piece: "bottes",    poids: 4, defense: 4, gain: 0.9 },
   casqueC:       { nom: "Heaume corrompu",     piece: "casque",    poids: 5, defense: 6, gain: 1.2, corrompue: true, effet: "marque",    desc: "Les ennemis touchés sont marqués : +10 % de dégâts" },
-  plastronC:     { nom: "Plastron corrompu",   piece: "plastron",  poids: 9, defense: 10, gain: 2, corrompue: true, effet: "regen",     desc: "Régénération lente des PV" },
+  plastronC:     { nom: "Plastron corrompu",   piece: "plastron",  poids: 9, defense: 10, gain: 2, corrompue: true, effet: "regen",     desc: "Rend 4 PV toutes les 6 secondes" },
   gantsC:        { nom: "Gantelets corrompus", piece: "gantelets", poids: 4, defense: 5, gain: 1,   corrompue: true, effet: "explosion", desc: "15 % de chance d'explosion corrompue" },
   bottesC:       { nom: "Bottes corrompues",   piece: "bottes",    poids: 4, defense: 5, gain: 1,   corrompue: true, effet: "bypass",    desc: "Immunité à la lenteur et aux pièges" },
 };
@@ -1700,8 +1701,14 @@ function majJoueur(dt) {
     if (a.t >= a.duree) J.atk = null;
   }
   // Régénération et pertes continues
-  const flux = JOUEUR.REGEN_PV_PAR_SEC + sommeAjouts("pvParSec") + (aEffetArmure("regen") ? 1.5 : 0);
-  if (flux !== 0) { J.pv = Math.min(J.pvMax, J.pv + flux * dt); if (J.pv <= 0) mourir(); }
+  // soins et pertes lents : appliqués d'un coup, à chaque pulsation (et pas en continu)
+  J.pulsation = (J.pulsation || 0) + dt;
+  if (J.pulsation >= JOUEUR.PULSATION_PV) {
+    J.pulsation = 0;
+    const variation = JOUEUR.REGEN_PV + sommeAjouts("pvParPulsation") + (aEffetArmure("regen") ? 4 : 0);
+    if (variation > 0 && J.pv < J.pvMax) { J.pv = Math.min(J.pvMax, J.pv + variation); nombre(J.x + J.w / 2, J.y - 8, "+" + variation + " PV", C.menthe, 1); }
+    if (variation < 0) { J.pv += variation; nombre(J.x + J.w / 2, J.y - 8, variation + " PV", C.corail, 1); J.touche = 0.2; if (J.pv <= 0) mourir(); }
+  }
 }
 function dureeCooldownLourd() { return (J && J.virus ? VIRUS[J.virus].cooldown : COMPETENCE.COOLDOWN) * multEffets("cooldownLourd") / multEffets("cadence") * (J ? effetCharge().recharge : 1); }
 

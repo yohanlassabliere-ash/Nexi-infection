@@ -16,3 +16,9 @@ Commandes sur PC : flèches ou ZQSD, Espace (saut), J (attaque), K (compétence)
 Tout le jeu tient dans un seul fichier : `index.html`. Ouvre-le dans un éditeur de texte, change une valeur dans la partie `★ DÉBUTANT` (en haut du fichier), enregistre, recharge la page : c'est tout.
 
 Le jeu ne collecte aucune donnée : la sauvegarde reste dans le navigateur du joueur.
+
+## L'atelier (modifier le code et jouer à sa version)
+
+- **En ligne** : https://yohanlassabliere-ash.github.io/Nexi-infection/atelier/ — le code à gauche, le jeu à droite, bouton ▶ LANCER. « Jouer sur mon téléphone » affiche un QR code : le visiteur repart avec sa version (le lien ne contient que ses modifications).
+- **Sans Internet (secours)** : télécharge ce dépôt (bouton Code > Download ZIP), puis double-clic sur `lancer_atelier.bat` (Python requis). L'atelier s'ouvre avec l'adresse IP du PC ; les téléphones doivent être sur le même Wi-Fi.
+- Le dossier `versions/` garde chaque version d'origine du jeu : les liens des visiteurs en ont besoin, ne le vide pas.

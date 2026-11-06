@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atelier Nexi : Infection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+  /* Atelier : le code à gauche, le jeu à droite. Couleurs reprises du jeu. */
+  :root {
+    color-scheme: dark;
+    --fond: #07040f; --panneau: #140c26; --bord: #2f2152; --texte: #e8e2ff; --doux: #8b7fc0;
+    --menthe: #3df5c4; --corail: #ff5e7a; --or: #ffd84d; --violet: #c9b0ff;
+    --titre: "Silkscreen", "Courier New", monospace;
+    --code: "JetBrains Mono", Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--fond); color: var(--texte); font: 14px/1.4 system-ui, sans-serif; display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 2px solid var(--bord); background: var(--panneau); }
+  h1 { font: 18px var(--titre); margin: 0 12px 0 0; color: var(--violet); letter-spacing: 1px; }
+  h1 b { color: var(--menthe); font-weight: normal; }
+  .outils { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: 1; }
+  button, select { font: 13px var(--titre); color: var(--texte); background: #241a44; border: 2px solid var(--doux); padding: 7px 12px; cursor: pointer; }
+  button:hover, select:hover { border-color: var(--violet); }
+  button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--or); outline-offset: 1px; }
+  button.lancer { background: #0c3330; border-color: var(--menthe); color: var(--menthe); }
+  button.tel { border-color: var(--or); color: var(--or); }
+  button.raz { border-color: var(--corail); color: var(--corail); }
+  .espace { flex: 1; }
+  .etat { font: 12px var(--titre); color: var(--doux); }
+  main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 0; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; grid-template-rows: 55% 45%; } }
+  .editeur { display: flex; min-height: 0; border-right: 2px solid var(--bord); position: relative; }
+  .numeros, textarea { font: 13px/18px var(--code); padding: 10px 8px; margin: 0; border: 0; }
+  .numeros { background: #0d0820; color: #4a3f78; text-align: right; min-width: 52px; overflow: hidden; white-space: pre; user-select: none; }
+  textarea { flex: 1; min-width: 0; resize: none; background: var(--fond); color: var(--texte); white-space: pre; overflow: auto; tab-size: 2; }
+  .droite { display: flex; flex-direction: column; min-height: 0; }
+  .ecran { flex: 1; min-height: 0; background: #000; position: relative; }
+  iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .console { font: 13px var(--code); padding: 8px 12px; min-height: 38px; background: var(--panneau); border-top: 2px solid var(--bord); }
+  .console.erreur { color: var(--corail); }
+  .console.ok { color: var(--menthe); }
+  .astuces { padding: 8px 12px 12px; background: var(--panneau); border-top: 2px solid var(--bord); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .astuces span { font: 12px var(--titre); color: var(--or); margin-right: 4px; }
+  .astuces button { font: 11px var(--code); padding: 4px 8px; border-width: 1px; }
+  dialog { background: var(--panneau); color: var(--texte); border: 2px solid var(--or); padding: 20px; max-width: min(92vw, 520px); }
+  dialog::backdrop { background: rgba(5, 1, 12, 0.85); }
+  dialog h2 { font: 18px var(--titre); color: var(--or); margin: 0 0 8px; }
+  dialog canvas { display: block; margin: 12px auto; image-rendering: pixelated; max-width: 100%; }
+  .lien { font: 11px var(--code); word-break: break-all; color: var(--doux); background: var(--fond); padding: 6px; max-height: 70px; overflow: auto; }
+  .ligneBoutons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+<header>
+  <h1>NEXI : INFECTION <b>ATELIER</b></h1>
+  <div class="outils">
+    <select id="sections" title="Aller à une partie du code"><option value="">Aller à…</option></select>
+    <button class="lancer" id="lancer" title="Ctrl + Entrée">▶ LANCER</button>
+    <button class="tel" id="telephone">JOUER SUR MON TÉLÉPHONE</button>
+    <button id="telecharger">TÉLÉCHARGER MON CODE</button>
+    <span class="espace"></span>
+    <span class="etat" id="etat">Chargement…</span>
+    <button class="raz" id="raz" title="Pour le visiteur suivant">NOUVEAU VISITEUR</button>
+  </div>
+</header>
+<main>
+  <div class="editeur">
+    <div class="numeros" id="numeros" aria-hidden="true"></div>
+    <textarea id="code" spellcheck="false" autocomplete="off" autocapitalize="off" wrap="off" aria-label="Code du jeu"></textarea>
+  </div>
+  <div class="droite">
+    <div class="ecran"><iframe id="jeu" title="Aperçu du jeu" allow="fullscreen; autoplay"></iframe></div>
+    <div class="console" id="console">Modifie une valeur, puis clique sur ▶ LANCER. Clique dans le jeu pour jouer au clavier.</div>
+    <div class="astuces" id="astuces"><span>ESSAIE :</span></div>
+  </div>
+</main>
+<dialog id="fenetre">
+  <h2>JOUE À TA VERSION</h2>
+  <p id="consigne">Scanne ce QR code avec l'appareil photo de ton téléphone.</p>
+  <canvas id="qr" width="10" height="10"></canvas>
+  <div class="lien" id="lien"></div>
+  <div class="ligneBoutons">
+    <button id="copier">COPIER LE LIEN</button>
+    <button id="fermer">FERMER</button>
+  </div>
+</dialog>
+<script src="../outils.js"></script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const zone = $("code"), numeros = $("numeros");
+let original = "", idOriginal = "";
+const CLE_BROUILLON = "nexi_atelier_brouillon";
+
+// Des idées de modifications pour démarrer (on cherche la ligne dans le code)
+const ASTUCES = [
+  { txt: "Nexi invincible", cherche: "PV_MAX:" },
+  { txt: "Sauter plus haut", cherche: "FORCE_SAUT:" },
+  { txt: "Renommer les boss", cherche: "const NOMS_BOSS" },
+  { txt: "Monstres coriaces", cherche: "MULT_PV:" },
+  { txt: "Élément des attaques", cherche: "const ELEMENT_ACTIF" },
+  { txt: "Composer la musique", cherche: "const MUSIQUE" },
+  { txt: "Texte de la mort", cherche: "TEXTES DE MORT" },
+];
+
+function mettreAJourNumeros() {
+  const n = zone.value.split("\n").length;
+  if (numeros.dataset.n == n) return;
+  numeros.dataset.n = n;
+  numeros.textContent = Array.from({ length: n }, (_, i) => i + 1).join("\n");
+}
+zone.addEventListener("scroll", () => { numeros.scrollTop = zone.scrollTop; });
+zone.addEventListener("input", () => { mettreAJourNumeros(); garderBrouillon(); });
+zone.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") { e.preventDefault(); zone.setRangeText("  ", zone.selectionStart, zone.selectionEnd, "end"); }
+  if ((e.ctrlKey || e.metaKey) && (e.key === "Enter" || e.key === "s")) { e.preventDefault(); lancer(); }
+});
+
+function allerALigne(n) {
+  const lignes = zone.value.split("\n");
+  let pos = 0; for (let i = 0; i < n - 1 && i < lignes.length; i++) pos += lignes[i].length + 1;
+  zone.focus();
+  zone.setSelectionRange(pos, pos + (lignes[n - 1] || "").length);
+  zone.scrollTop = Math.max(0, (n - 4) * 18);
+}
+function chercherLigne(motif) { const i = zone.value.split("\n").findIndex((l) => l.includes(motif)); return i < 0 ? null : i + 1; }
+
+function remplirSections() {
+  const sel = $("sections");
+  sel.length = 1;
+  zone.value.split("\n").forEach((l, i) => {
+    const m = l.match(/(★★? (DÉBUTANT|CODEUR)) — (.+?)\s*(\*\/)?$/);
+    if (m) { const o = document.createElement("option"); o.value = i + 1; o.textContent = (m[2] === "DÉBUTANT" ? "★ " : "★★ ") + m[3].slice(0, 48); sel.appendChild(o); }
+  });
+}
+$("sections").addEventListener("change", (e) => { if (e.target.value) allerALigne(+e.target.value); e.target.value = ""; });
+
+// Lancer : le jeu modifié tourne dans le cadre de droite. Un petit script attrape les erreurs.
+function lancer() {
+  const espion = "<script>window.onerror=function(m,s,l){parent.postMessage({nexiErreur:String(m),ligne:l},'*');};<\/script>";
+  const code = zone.value.replace(/^(<!DOCTYPE html>)/i, "$1" + espion);   // même ligne : les numéros restent justes
+  $("console").className = "console ok";
+  $("console").textContent = "Jeu relancé avec ton code. Clique dans le jeu pour jouer au clavier.";
+  $("jeu").srcdoc = code;
+  majEtat();
+}
+$("lancer").addEventListener("click", lancer);
+window.addEventListener("message", (e) => {
+  if (!e.data || !e.data.nexiErreur) return;
+  $("console").className = "console erreur";
+  $("console").textContent = "Erreur ligne " + e.data.ligne + " (ou juste au-dessus) : " + e.data.nexiErreur + ". Vérifie les virgules, guillemets et accolades.";
+  const b = document.createElement("button"); b.textContent = "VOIR LA LIGNE " + e.data.ligne; b.style.marginLeft = "8px";
+  b.onclick = () => allerALigne(e.data.ligne); $("console").appendChild(b);
+});
+
+function majEtat() {
+  const n = differences(original.split("\n"), zone.value.split("\n")).reduce((s, b) => s + Math.max(b[1], b[2].length), 0);
+  $("etat").textContent = n ? n + " ligne(s) modifiée(s)" : "Code d'origine";
+}
+function garderBrouillon() { try { localStorage.setItem(CLE_BROUILLON, JSON.stringify({ id: idOriginal, code: zone.value })); } catch (e) { } }
+
+// Jouer sur son téléphone : QR code avec les différences compressées
+$("telephone").addEventListener("click", async () => {
+  const paquet = await creerPaquet(original, zone.value);
+  const lien = new URL("../jouer/", location.href).href + "#" + paquet.texte;
+  const grille = qrCode(lien);
+  $("lien").textContent = lien;
+  if (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+    $("consigne").textContent = "Attention : ce PC est ouvert en « localhost ». Ouvre l'atelier avec l'adresse IP affichée par le serveur pour que le téléphone puisse la joindre.";
+  else if (location.protocol === "http:") $("consigne").textContent = "Mode sans Internet : connecte d'abord ton téléphone au Wi-Fi du stand, puis scanne le QR code.";
+  else $("consigne").textContent = "Scanne ce QR code avec l'appareil photo de ton téléphone.";
+  if (grille) { $("qr").hidden = false; dessinerQRCanvas($("qr"), grille, 340); }
+  else { $("qr").hidden = true; $("consigne").textContent = "Tu as fait trop de modifications pour un QR code : utilise « Télécharger mon code » puis envoie-toi le fichier."; }
+  $("fenetre").showModal();
+});
+$("fermer").addEventListener("click", () => $("fenetre").close());
+$("copier").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("lien").textContent); $("copier").textContent = "COPIÉ !"; }
+  catch (e) { const r = document.createRange(); r.selectNodeContents($("lien")); getSelection().removeAllRanges(); getSelection().addRange(r); }
+});
+
+$("telecharger").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([zone.value], { type: "text/html;charset=utf-8" }));
+  a.download = "nexi_infection_ma_version.html";
+  document.body.appendChild(a); a.click(); a.remove();
+});
+$("raz").addEventListener("click", () => {
+  if (!confirm("Effacer les modifications et repartir du code d'origine ?")) return;
+  zone.value = original; mettreAJourNumeros(); garderBrouillon(); lancer(); zone.scrollTop = 0;
+});
+
+async function demarrer() {
+  try {
+    original = (await (await fetch("../index.html", { cache: "no-store" })).text()).replace(/\r\n/g, "\n");
+  } catch (e) { $("etat").textContent = "Impossible de charger le jeu"; return; }
+  idOriginal = empreinte(original);
+  let code = original;
+  try { const b = JSON.parse(localStorage.getItem(CLE_BROUILLON) || "null"); if (b && b.id === idOriginal) code = b.code; } catch (e) { }
+  zone.value = code;
+  mettreAJourNumeros(); remplirSections();
+  for (const a of ASTUCES) {
+    const b = document.createElement("button"); b.textContent = a.txt;
+    b.onclick = () => { const n = chercherLigne(a.cherche); if (n) allerALigne(n); };
+    $("astuces").appendChild(b);
+  }
+  lancer();
+  const n = chercherLigne("★ DÉBUTANT — CONFIGURATION"); if (n) allerALigne(n);
+}
+demarrer();
+</script>
+</body>
+</html>
