@@ -112,7 +112,7 @@ const TITRES_BOSS = {
 // ==================================================================
 // ★ DÉBUTANT — L'HISTOIRE
 // ==================================================================
-// Le Tyran se replie tant que Nexi n'a pas le Ver Ultime. Le Ver Ultime
+// Le Tyran se replie tant que Nexi n'a pas l'Abyssal Worm. L'Abyssal Worm
 // repose au fond de l'Abysse, juste après la Ne rencontre avec le Tyran.
 // Pour voir la fin pendant l'atelier : mets 1 ici, et ARCHONTE_TOUS_LES: 1
 // dans la section CODEUR des boss (le Tyran arrive alors en salle 7).
@@ -1362,7 +1362,7 @@ function salleSuivante(cible, malusForce) {
   chargerSalle(salle);
   if (introBoss) { introBoss.banniere = banniere; banniere = null; }  // le bandeau attend la fin de l'entrée du boss
   if (salleInfo.type === "terminal") banniere = { titre: "TERMINAL - PARTIE SAUVEGARDÉE", sous: "Approche-toi pour soigner, monter en niveau et t'équiper", couleur: C.menthe, t: 4 };
-  if (salleInfo.type === "sanctuaire") banniere = { titre: "LE SANCTUAIRE DU VER ULTIME", sous: "Le fond de l'Abysse... Une lueur pulse dans le noir.", couleur: "#ffd84d", t: 4 };
+  if (salleInfo.type === "sanctuaire") banniere = { titre: "LE SANCTUAIRE DE L'ABYSSAL WORM", sous: "Le fond de l'Abysse... Une lueur pulse dans le noir.", couleur: "#ffd84d", t: 4 };
 }
 
 // Taille de la zone de contact (hitbox) de chaque ennemi
@@ -1473,7 +1473,7 @@ function infligerDegats(e, dmg, fort, discret, source) {
   e.pv -= dmg; e.flash = 0.1;
   if (!discret || dmg >= 1) nombre(e.x + e.w / 2, e.y - 6, String(Math.round(dmg)), fort ? "#ffd84d" : "#ffffff");
   for (let i = 0; i < (fort ? 12 : 5); i++) particule(e.x + e.w / 2, e.y + e.h / 2, rnd(-70, 70), rnd(-80, 10), Math.random() < 0.5 ? C.veineVive : "#ffd84d", 0.4);
-  if (e.boss === "archonte" && !e.coupFinal) { // le Tyran : il fuit sans le Ver Ultime, sinon le Ver l'achève
+  if (e.boss === "archonte" && !e.coupFinal) { // le Tyran : il fuit sans l'Abyssal Worm, sinon l'Abyssal Worm l'achève
     if ((!J.verUltime || souvenir) && e.pv <= e.pvMax * 0.15) { e.pv = e.pvMax * 0.15; tyranFuit(e); return dmg; }
     if (J.verUltime && !souvenir && e.pv <= 0) { e.pv = 1; coupDeGrace(e); return dmg; }
   }
@@ -3080,7 +3080,7 @@ function infoSalle(n) {
     if (archonte) {
       archonte = false; rencontres++;
       info = { type: "archonte", cycle: cycle - 1, pos: L - 1, rencontre: rencontres };
-      // après la Ne rencontre : le sanctuaire du Ver Ultime, puis le combat final
+      // après la Ne rencontre : le sanctuaire de l'Abyssal Worm, puis le combat final
       if (rencontres === N) suite.push({ type: "sanctuaire", cycle: cycle - 1, pos: L - 1 }, { type: "archonte", cycle: cycle - 1, pos: L - 1, rencontre: rencontres, final: true });
       continue;
     }
@@ -3598,14 +3598,14 @@ function dessinerEcrans() {
 }
 
 /* ==================================================================
-   ★★ CODEUR — MISE EN SCÈNE : entrée des boss, Ver Ultime, histoire
+   ★★ CODEUR — MISE EN SCÈNE : entrée des boss, Abyssal Worm, histoire
    ================================================================== */
 let introBoss = null, salleInfo = { type: "normal" }, autel = null, tHist = 0, tVic = 0, victoireDans = 0;
 const profondeur = (n) => (n - 1) * HISTOIRE.PROFONDEUR_PAR_SALLE;
 const texteIntro = () => [
   "La NEXA Digital School a été infectée.",
   "Un tyran, le " + NOMS_BOSS.archonte + ", s'est emparé de ses serveurs.",
-  "Une seule arme peut l'anéantir : le Ver Ultime,",
+  "Une seule arme peut l'anéantir : l'Abyssal Worm,",
   "enfoui au fin fond de l'Abysse du Dark Web.",
   "",
   "Nexi plonge.",
@@ -3627,7 +3627,7 @@ function majIntro(dt) {
 }
 function poseRugissement(e) { return introBoss && introBoss.e === e && introBoss.t > 1.0 && introBoss.t < 2.2; }
 
-// Le Tyran se replie (sans le Ver Ultime) ou reçoit le coup de grâce (avec)
+// Le Tyran se replie (sans l'Abyssal Worm) ou reçoit le coup de grâce (avec)
 function tyranFuit(e) {
   e.etat = "fuite"; e.tA = 0; e.intangible = true; e.bouclier = false;
   for (const m of ennemis) if (m !== e && !m.mort && m.type !== "parasite") m.mort = true;
@@ -3637,13 +3637,13 @@ function tyranFuit(e) {
   if (souvenir) { finSouvenirDans = 2.5; banniere = { titre: "SOUVENIR REVÉCU !", sous: "Le Tyran se replie, comme la première fois", couleur: "#ffd84d", t: 2.5 }; return; }
   lacherObjet(pieceCorrompueAuHasard(nivDeProfondeur(salle) + 1), e.x + e.w / 2); // il laisse tomber une pièce de son armure
   gagnerXP(XP_ENNEMIS.archonte); gagnerFragments(40);
-  banniere = { titre: "LE TYRAN SE REPLIE...", sous: "Il fuit vers les profondeurs. Seul le Ver Ultime peut l'achever.", couleur: C.corail, t: 4.5 };
+  banniere = { titre: "LE TYRAN SE REPLIE...", sous: "Il fuit vers les profondeurs. Seul l'Abyssal Worm peut l'achever.", couleur: C.corail, t: 4.5 };
 }
 function coupDeGrace(e) {
   e.etat = "grace"; e.tA = 0; e.intangible = true; e.bouclier = false;
   for (const m of ennemis) if (m !== e && !m.mort && m.type !== "parasite") m.mort = true;
   rayons = []; zones = []; colonnes = []; ondesSol = []; projectiles = [];
-  banniere = { titre: "LE VER ULTIME S'ÉVEILLE !", sous: "", couleur: "#ffd84d", t: 2 };
+  banniere = { titre: "L'ABYSSAL WORM S'ÉVEILLE !", sous: "", couleur: "#ffd84d", t: 2 };
 }
 function majBossSpecial(e, dt) { // renvoie true si le boss est dans une phase scénarisée
   if (e.etat === "intro") return true;
@@ -3660,7 +3660,7 @@ function majBossSpecial(e, dt) { // renvoie true si le boss est dans une phase s
   }
   return false;
 }
-// Le Ver Ultime frappe : un serpent de lumière file de Nexi jusqu'au Tyran
+// L'Abyssal Worm frappe : un serpent de lumière file de Nexi jusqu'au Tyran
 function dessinerVerUltime(ox, oy) {
   const e = ennemis.find(b => b.etat === "grace");
   if (!e) return;
@@ -3674,7 +3674,7 @@ function dessinerVerUltime(ox, oy) {
   if (lg >= 1) { const r = Math.round((e.tA - 1) * 80); for (let a = 0; a < 360; a += 6) px(x1 + Math.cos(a * Math.PI / 180) * r, y1 + Math.sin(a * Math.PI / 180) * r, "#ffffff"); }
 }
 
-// Le sanctuaire du Ver Ultime
+// Le sanctuaire de l'Abyssal Worm
 function dessinerAutel(ox, oy) {
   if (!autel) return;
   const x = autel.x - ox, y = SOL - oy;
@@ -3683,20 +3683,20 @@ function dessinerAutel(ox, oy) {
   rect(x + 2, y - 11, 12, 1, "#ffd84d");
   if (autel.pris) return;
   const cy = y - 34 + Math.sin(temps * 2) * 2;
-  for (let s = 0; s < 1; s += 0.01) { // le Ver Ultime, enroulé sur lui-même
+  for (let s = 0; s < 1; s += 0.01) { // l'Abyssal Worm, enroulé sur lui-même
     const a = s * Math.PI * 5 + temps * 2, r = 14 * (1 - s * 0.7);
     const c = s < 0.1 ? "#ffffff" : (s * 30) % 3 < 1 ? "#ffd84d" : (s * 30) % 3 < 2 ? C.menthe : "#ffffff";
     rect(x + 8 + Math.cos(a) * r, cy + Math.sin(a) * r * 0.6 - s * 14, 3, 3, c);
   }
   if (Math.random() < 0.3) particule(autel.x + 8 + rnd(-10, 10), SOL - 40, rnd(-10, 10), rnd(-30, -10), Math.random() < 0.5 ? "#ffd84d" : C.menthe, 0.8);
-  if (Math.floor(temps * 2) % 2) texteCentre("LE VER ULTIME", x + 8, cy - 22, "#ffd84d", C.encre);
+  if (Math.floor(temps * 2) % 2) texteCentre("L'ABYSSAL WORM", x + 8, cy - 22, "#ffd84d", C.encre);
 }
 function majAutel() {
   if (!autel || autel.pris) return;
   if (chevauche(corpsJoueur(), { x: autel.x - 6, y: SOL - 50, w: 28, h: 50 })) {
     autel.pris = true; J.verUltime = true; J.pv = J.pvMax; secousse = 0.5;
     for (let i = 0; i < 60; i++) particule(J.x + J.w / 2, J.y + 12, rnd(-150, 150), rnd(-180, 40), ["#ffd84d", C.menthe, "#ffffff"][i % 3], 1);
-    banniere = { titre: "LE VER ULTIME EST À TOI !", sous: "Le Tyran ne pourra plus fuir. Il t'attend dans la salle suivante.", couleur: "#ffd84d", t: 4.5 };
+    banniere = { titre: "L'ABYSSAL WORM EST À TOI !", sous: "Le Tyran ne pourra plus fuir. Il t'attend dans la salle suivante.", couleur: "#ffd84d", t: 4.5 };
   }
 }
 
@@ -3799,7 +3799,7 @@ function dessinerCarteTitre() {
 let dernierTap = null;
 function etiquetteSalle(n) {
   const i = infoSalle(n);
-  if (i.type === "sanctuaire") return { type: "VER ULTIME", nom: "SANCTUAIRE", c: "#ffd84d" };
+  if (i.type === "sanctuaire") return { type: "ABYSSAL WORM", nom: "SANCTUAIRE", c: "#ffd84d" };
   if (i.type === "terminal") return { type: "TERMINAL", nom: "REPOS", c: C.menthe };
   if (i.type === "archonte") return { type: i.final ? "COMBAT FINAL" : "TYRAN", nom: NOMS_BOSS.archonte, c: C.corail };
   if (i.type === "miniboss") return { type: "MINI-BOSS", nom: i.mini < BOSS.ORDRE.length ? NOMS_BOSS[BOSS.ORDRE[i.mini]] : "???", c: "#ffd84d" };
@@ -4240,7 +4240,7 @@ function dessinerHUD() {
   texte(Math.ceil(J.pv) + "/" + J.pvMax, 62, 5, C.texte, C.encre);
   // barre d'XP sous la barre de vie
   rect(4, 11, 54, 1, "#1d1236"); rect(4, 11, Math.round(54 * clamp(J.xp / xpPourNiveau(J.niveau), 0, 1)), 1, "#ffd84d");
-  texte("SALLE " + salle + "  -" + profondeur(salle) + " M  X " + tues + (J.verUltime ? "  *VER ULTIME*" : "") + (niveauCharge() === "lourde" ? "  CHARGE LOURDE" : ""), 4, 14, niveauCharge() === "lourde" ? C.corail : C.texte, C.encre);
+  texte("SALLE " + salle + "  -" + profondeur(salle) + " M  X " + tues + (J.verUltime ? "  *ABYSSAL WORM*" : "") + (niveauCharge() === "lourde" ? "  CHARGE LOURDE" : ""), 4, 14, niveauCharge() === "lourde" ? C.corail : C.texte, C.encre);
   const nv = "NV " + J.niveau + (J.points > 0 ? " (+" + J.points + ")" : "") + "  " + J.fragments + " FRAG.";
   texte(nv, 62 + largeurTexte(Math.ceil(J.pv) + "/" + J.pvMax) + 6, 5, J.points > 0 && Math.floor(temps * 3) % 2 ? "#ffd84d" : "#c9b0ff", C.encre);
   let yh = 22;

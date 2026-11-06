@@ -2,7 +2,7 @@
 
 Mini-jeu modifiable via le code dans le cadre du salon Your Future.
 
-Jeu d'action 2D en pixel art, jouable dans le navigateur (PC et téléphone), créé pour l'atelier code de NEXA Digital School au salon Your Future (Lyon). Nexi, la mascotte, descend dans l'Abysse du dark web pour récupérer le Ver Ultime et vaincre le Tyran qui a envahi la NEXA.
+Jeu d'action 2D en pixel art, jouable dans le navigateur (PC et téléphone), créé pour l'atelier code de NEXA Digital School au salon Your Future (Lyon). Nexi, la mascotte, descend dans l'Abysse du dark web pour récupérer l'Abyssal Worm et vaincre le Tyran qui a envahi la NEXA.
 
 ## Jouer
 
